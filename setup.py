@@ -8,7 +8,6 @@ setup(name='sail',
       author_email='seshutir@ie.ibm.com',
       license='MIT',
       python_requires='>=3.6',
-      packages=find_packages(),
       install_requires=[
           "numpy>=1.21.0",
           "scipy>=1.5.2",
@@ -32,4 +31,5 @@ setup(name='sail',
           'pytest',
           'flake8'
       ],
+      packages=find_packages(),
       zip_safe=False)

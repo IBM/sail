@@ -14,16 +14,17 @@ from inspect import signature
 
 
 class BaseAggregator(ABC):
-    """Abstract class for all ensemble forecasts.
-    Parameters
-    ----------
-    base_estimators: list, length must be greater than 1
-        A list of base estimators. Certain methods must be present, e.g.,
-        `partial_fit` and `predict`.
-    """
 
     @abstractmethod
     def __init__(self, base_estimators, fitted_estimators=[], window_size=200, pre_fitted=False):
+        """
+        :param base_estimators: Estimator objects with partial_fit defined
+                    (incremental learning models).
+        :param fitted_estimators: Batch learning estimators.
+                Used only for scoring.
+        :param metrics: Object that defines the quality of predictions
+           (ex. metrics.accuracy_score in scikit-learn)
+        """
         assert (isinstance(base_estimators, (list)))
         assert (isinstance(fitted_estimators, (list)))
         if (len(base_estimators) + len(fitted_estimators)) < 2:
@@ -35,51 +36,35 @@ class BaseAggregator(ABC):
         self.window_size = window_size
 
     def fit(self, X, y=None):
-        """Fit estimator. y is optional for unsupervised methods.
-        Under the hood, it just calls the partial_fit function.
-        Parameters
-        ----------
-        X : numpy array of shape (n_samples, n_features)
-            The input samples.
-        y : numpy array of shape (n_samples,), optional (default=None)
-            The ground truth of the input samples (labels).
-        Returns
-        -------
-        self
+        """
+        :param X: numpy.ndarray of shape (n_samples, n_features).
+               Input samples.
+        :param y: numpy.ndarray of shape (n_samples)
+               Labels for the target variable.
+        :return:
         """
         return self.partial_fit(X,y)
 
     @abstractmethod
     def partial_fit(self, X, y=None, classes=None):
-        """Partial fit estimator. y is optional for unsupervised methods.
-        Parameters
-        ----------
-        X : numpy array of shape (n_samples, n_features)
-            The input samples.
-        y : numpy array of shape (n_samples,), optional (default=None)
-            The ground truth of the input samples (labels).
-        classes: Unique classes in the data y.
-
-        Returns
-        -------
-        self
+        """
+        :param X: numpy.ndarray of shape (n_samples, n_features).
+               Input samples.
+        :param y: numpy.ndarray of shape (n_samples)
+               Labels for the target variable.
+        :param classes: numpy.ndarray, optional.
+               Unique classes in the data y.
+        :return:
         """
         pass
 
     @abstractmethod
     def predict(self, X):
-        """Predict the class labels or forecast for the provided data for classification and regression tasks
-        respectively.
-        Parameters
-        ----------
-        X : numpy array of shape (n_samples, n_features)
-            The input samples.
-        Returns
-        -------
-        labels : numpy array of shape (n_samples,)
-            Class labels for each data sample.
-        labels : numpy array of shape (n_samples,)
-            Class labels for each data sample.
+        """
+        :param X: numpy.ndarray of shape (n_samples, n_features).
+               Input samples.
+        :return: numpy array of shape (n_samples,).
+             Class labels/predictions for input samples.
         """
         pass
 
@@ -99,16 +84,6 @@ class BaseAggregator(ABC):
     #     pass
 
     def _set_n_classes(self, y):
-        """Set the number of classes if `y` is presented.
-        Parameters
-        ----------
-        y : numpy array of shape (n_samples,)
-            Ground truth.
-        Returns
-        -------
-        self
-        """
-
         self._classes = 2  # default as binary classification
         if y is not None:
             check_classification_targets(y)
@@ -159,7 +134,6 @@ class BaseAggregator(ABC):
         See http://scikit-learn.org/stable/modules/generated/sklearn.base.BaseEstimator.html
         and sklearn/base.py for more information.
         """
-
         # fetch the constructor or the original constructor before
         # deprecation wrapping if any
         init = getattr(cls.__init__, 'deprecated_original', cls.__init__)

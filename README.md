@@ -13,4 +13,7 @@ Sail leverages the existing machine learning libraries like River, sklearn etc a
 In addition, streaming algorithms were chosen to be sklearn compatible so that hyperparameter optimization algorithms available in Ray can be directly utilized. 
 
 # Spark vs Ray for incremental models. 
-Sail could have been parallelized using Spark as well. However, to keep the streaming processing engines and machine learning tasks independent, Ray was preferred as the data can then be handled using Pandas, Numpy etc efficiently. This flexibility further allows using other SPEs like Flink or Storm without updating the parallelization framework  for IML models. 
+Sail could have been parallelized using Spark as well. However, to keep the streaming processing engines and machine learning tasks independent, Ray was preferred as the data can then be handled using Pandas, Numpy etc efficiently. This flexibility further allows using other SPEs like Flink or Storm without updating the parallelization framework  for IML models.
+
+# Acknowledgment
+This project has received funding from the European Union’s Horizon 2020 research and innovation programme under grant agreement No 957345 for MORE project. 

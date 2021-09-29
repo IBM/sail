@@ -4,10 +4,10 @@ setup(name='sail',
       version='0.1.0',
       description='Python package for streaming data and incremental learning',
       url='https://github.com/IBM/sail',
-      author='Seshu Tirupathi, Mark Purcell',
+      author='Seshu Tirupathi',
       author_email='seshutir@ie.ibm.com',
       license='MIT',
-      python_requires='>=3.6',
+      python_requires='>=3.8',
       install_requires=[
           "numpy>=1.21.0",
           "scipy>=1.5.2",
@@ -20,11 +20,13 @@ setup(name='sail',
       extras_require={
           "keras": ["keras", "scikeras"],
           "tensorflow": ["tensorflow", "tensorflow_addons"],
-          "pytorch": ["torch", "torchvision"],
+          "pytorch": ["torch", "torchvision", "skorch"],
+          "scikit-multiflow": ["scikit-multiflow"],
           "all": [
               "keras",
               "tensorflow",
-              "torch"
+              "pytorch"
+              "scikit-multiflow"
           ]
       },
       tests_require=[

@@ -17,22 +17,12 @@ __all__ = ["DistAggregateRegressor"]
 
 
 class DistAggregateRegressor(BaseAggregator):
-    """Exponentially Weighted Average regressor.
-    Parameters
-    ----------
-    estimators
-        The estimators to hedge.
-    loss
-        The loss function that has to be minimized. Defaults to `optim.losses.Squared`.
-    learning_rate
-        The learning rate by which the model weights are multiplied at each iteration.
-    """
 
     def __init__(
         self,
-        estimators: typing.List[base.Regressor],
-        fitted_estimators: typing.List[base.Regressor] = [],
-        loss: optim.losses.RegressionLoss = None,
+        estimators,
+        fitted_estimators = [],
+        loss = None,
         learning_rate=0.5,
         aggregator="simple"
     ):
@@ -41,8 +31,7 @@ class DistAggregateRegressor(BaseAggregator):
                     (incremental learning models).
         :param fitted_estimators: Batch learning estimators.
                 Used only for scoring.
-        :param metrics: Object that defines the quality of predictions
-           (ex. metrics.accuracy_score in scikit-learn)
+        :param aggregator: Type of aggregator. Options are "simple", "windsor" and "trim"
         """
         # if len(estimators) < 2:
         #     raise NotEnoughModels(n_expected=2, n_obtained=len(estimators))
@@ -58,13 +47,10 @@ class DistAggregateRegressor(BaseAggregator):
 
     def _partial_fit(self, X, y=None, **kwargs):
         """
-        :param model: Any machine learning model with partial_fit function defined.
         :param X: numpy.ndarray of shape (n_samples, n_features).
                Input samples.
         :param y: numpy.ndarray of shape (n_samples)
                Labels for the target variable.
-        :param classes: numpy.ndarray, optional.
-               Unique classes in the data y.
         :return:
         """
         obj_ids = []
@@ -78,13 +64,10 @@ class DistAggregateRegressor(BaseAggregator):
 
     def partial_fit(self, X, y=None):
         """
-        :param model: Any machine learning model with partial_fit function defined.
         :param X: numpy.ndarray of shape (n_samples, n_features).
                Input samples.
         :param y: numpy.ndarray of shape (n_samples)
                Labels for the target variable.
-        :param classes: numpy.ndarray, optional.
-               Unique classes in the data y.
         :return:
         """
         self._partial_fit(X, y)
@@ -95,7 +78,7 @@ class DistAggregateRegressor(BaseAggregator):
         :param X: numpy.ndarray of shape (n_samples, n_features).
                Input samples.
         :return: numpy array of shape (n_samples,).
-             Class labels/predictions for input samples.
+             Predictions for input samples.
         """
         X_ensemble = []
         self.estimators = self.base_estimators

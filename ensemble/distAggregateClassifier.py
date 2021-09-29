@@ -1,7 +1,7 @@
 """
 Classifier for ensemble models
 Based on: https://github.com/yzhao062/combo/blob/master/combo/models/base.py extended for
-parallelizable incremental and batch learning algorithms.
+parallelizable, incremental and batch learning algorithms.
 """
 
 import typing
@@ -29,8 +29,7 @@ class DistAggregateClassifier(BaseAggregator):
                     (incremental learning models).
         :param fitted_estimators: Batch learning estimators.
                 Used only for scoring.
-        :param metrics: Object that defines the quality of predictions
-           (ex. metrics.accuracy_score in scikit-learn)
+        :param aggregator: Type of aggregator. Options are "maximization" and "majority_vote"
         """
         # if len(estimators) < 2:
         #     raise NotEnoughModels(n_expected=2, n_obtained=len(regressors))
@@ -44,7 +43,6 @@ class DistAggregateClassifier(BaseAggregator):
 
     def _partial_fit(self, X, y=None, classes=None, **kwargs):
         """
-        :param model: Any machine learning model with partial_fit function defined.
         :param X: numpy.ndarray of shape (n_samples, n_features).
                Input samples.
         :param y: numpy.ndarray of shape (n_samples)
@@ -64,7 +62,6 @@ class DistAggregateClassifier(BaseAggregator):
 
     def partial_fit(self, X, y=None, classes=None):
         """
-        :param model: Any machine learning model with partial_fit function defined.
         :param X: numpy.ndarray of shape (n_samples, n_features).
                Input samples.
         :param y: numpy.ndarray of shape (n_samples)

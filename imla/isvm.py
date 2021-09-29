@@ -59,9 +59,9 @@ class ISVM:
             lr = 1.0 / (self.lam * (t + 1))
             w = self.W[t]
             dot = w @ X[ith]
-            test = y.iloc[ith]*dot
-            if y.iloc[ith] * dot < 1:
-                self.W[t + 1] = (1 - (lr * self.lam)) * w + lr * y.iloc[ith] * X[ith]
+            test = y[ith]*dot
+            if y[ith] * dot < 1:
+                self.W[t + 1] = (1 - (lr * self.lam)) * w + lr * y[ith] * X[ith]
             else:
                 self.W[t + 1] = (1 - (lr * self.lam)) * w
         return self

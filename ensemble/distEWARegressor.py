@@ -23,23 +23,19 @@ __all__ = ["DistEWARegressor"]
 
 
 class DistEWARegressor(BaseAggregator):
-    """Exponentially Weighted Average estimator.
-    Parameters
-    ----------
-    estimators
-        The estimators to hedge.
-    loss
-        The loss function that has to be minimized. Defaults to `optim.losses.Squared`.
-    learning_rate
-        The learning rate by which the model weights are multiplied at each iteration.
-    """
-
     def __init__(
         self,
-        estimators: typing.List[base.Regressor],
-        loss: optim.losses.RegressionLoss = None,
+        estimators,
+        loss= None,
         learning_rate=0.5,
     ):
+        """
+        :param estimators: Estimator objects with partial_fit defined
+                    (incremental learning models).
+        :param loss: loss function to be minimized
+        :param learning_rate: The learning rate by which the model weights are multiplied at each iteration.
+        """
+
         # if len(estimators) < 2:
         #     raise NotEnoughModels(n_expected=2, n_obtained=len(estimators))
 
@@ -53,6 +49,14 @@ class DistEWARegressor(BaseAggregator):
         super().__init__(estimators)
 
     def _partial_fit(self, X, y=None, **kwargs):
+        """
+        :param X: numpy.ndarray of shape (n_samples, n_features).
+               Input samples.
+        :param y: numpy.ndarray of shape (n_samples)
+               Labels for the target variable.
+        :param kwargs:
+        :return: numpy.ndarray of shape (n_samples)
+        """
         y_pred_mean = 0.0
 
         # Make a prediction and update the weights accordingly for each model
@@ -80,10 +84,25 @@ class DistEWARegressor(BaseAggregator):
         return y_pred_mean
 
     def partial_fit(self, X, y=None, classes=None):
+        """
+        :param X: numpy.ndarray of shape (n_samples, n_features).
+               Input samples.
+        :param y: numpy.ndarray of shape (n_samples)
+               Labels for the target variable.
+        :param kwargs:
+        :return: numpy.ndarray of shape (n_samples)
+        """
+
         self._partial_fit(X, y)
         return self
 
     def predict(self, X):
+        """
+        :param X: numpy.ndarray of shape (n_samples, n_features).
+               Input samples.
+        :return: numpy array of shape (n_samples,).
+             Class labels/predictions for input samples.
+        """
         for i, estimator in enumerate(self.base_estimators):
             if not hasattr(estimator, 'n_features_in_'):
                 estimator.n_features_in_ = X.shape[1]

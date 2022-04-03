@@ -9,11 +9,10 @@ import time
 import ray
 from sail.model_selector.holdout_best_model import HoldoutBestModelSelector
 from sklearn.metrics import r2_score
-from sail.imla.ielm import IELM
+from sail.models.native.ielm import IELM
 
 
 class TestHoldoutBestRegressor(unittest.TestCase):
-
     def setUp(self):
         warnings.simplefilter("ignore", ResourceWarning)
 
@@ -39,12 +38,13 @@ class TestHoldoutBestRegressor(unittest.TestCase):
         df_y = df_y.iloc[:10]
         # print(df_X.shape)
 
-        xtrain, xtest, ytrain, ytest = train_test_split(df_X, df_y, test_size=0.2, random_state=42)
+        xtrain, xtest, ytrain, ytest = train_test_split(
+            df_X, df_y, test_size=0.2, random_state=42
+        )
 
         stdScaler_many = preprocessing.StandardScaler()
 
-        model_many = linear_model.LinearRegression(
-            optimizer=optim.RMSProp())
+        model_many = linear_model.LinearRegression(optimizer=optim.RMSProp())
 
         dataset = stream.iter_pandas(xtrain, ytrain)
 
@@ -56,8 +56,9 @@ class TestHoldoutBestRegressor(unittest.TestCase):
 
         ielm_model = IELM(numInputNodes=13, numOutputNodes=1, numHiddenNodes=7)
 
-        hedge = HoldoutBestModelSelector(estimators=[linear_model.LinearRegression(), ielm_model],
-                                         metrics=r2_score)
+        hedge = HoldoutBestModelSelector(
+            estimators=[linear_model.LinearRegression(), ielm_model], metrics=r2_score
+        )
 
         start = time.time()
         hedge.partial_fit(x, yi)
@@ -70,15 +71,17 @@ class TestHoldoutBestRegressor(unittest.TestCase):
         hedge.predict(x)
 
         # print("best model ", type(hedge.get_best_model()).__name__)
-        print("best model ", (hedge.get_best_model()).river_estimator.__class__.__name__)
+        print(
+            "best model ", (hedge.get_best_model()).river_estimator.__class__.__name__
+        )
         # print("best model ", hedge.get_best_model_index(x,yi))
         assert type(hedge.get_best_model()).__name__ == "River2SKLRegressor"
-        assert hedge.get_best_model_index(x,yi) == 1
+        assert hedge.get_best_model_index(x, yi) == 1
         # assert (hedge.get_best_model()).river_estimator == "LinearRegression"
 
         # assert np.allclose(y_pred, expected_predictions)
         # assert type(learner.predict(X)) == np.ndarray
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     unittest.main()

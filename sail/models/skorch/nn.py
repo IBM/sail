@@ -6,9 +6,9 @@ import torch.nn.functional as F
 
 class NNModel(nn.Module):
     def __init__(
-            self,
-            num_units=10,
-            nonlin=F.relu,
+        self,
+        num_units=10,
+        nonlin=F.relu,
     ):
         super(NNModel, self).__init__()
         self.num_units = num_units
@@ -27,11 +27,16 @@ class NNModel(nn.Module):
 
 
 class NNRegressor(NeuralNetRegressor):
-    def __init__(self, ni , no, nh, nlayers, module=NNModel, **kwargs):
+    def __init__(self, ni, no, nh, nlayers, module=NNModel, **kwargs):
         super(NNRegressor, self).__init__(
             module=module,
             module__ni=ni,
             module__no=no,
             module__nh=nh,
             module__nlayers=nlayers,
-            **kwargs)
+            **kwargs
+        )
+
+
+if __name__ == "__main__":
+    regressor = NNRegressor(None, None, None, None)

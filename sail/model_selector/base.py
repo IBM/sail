@@ -2,14 +2,17 @@ from sail.utils.ray_utils import _model_fit
 import ray
 from sklearn.metrics import r2_score
 from abc import ABC, abstractmethod
-from sail.imla.base import MetaEstimatorMixin
+from sail.models.native.base import MetaEstimatorMixin
+
 # Reference: https://github.com/AlexImb/automl-streams
 # https://github.com/yzhao062/combo/blob/master/combo/models/base.py
+
 
 class ModelSelectorBase(ABC, MetaEstimatorMixin):
     """
     Base class for distributed model selection.
     """
+
     def __init__(self, estimators, fitted_estimators=[], metrics=r2_score):
         """
         :param estimators: Estimator objects with partial_fit defined
@@ -19,7 +22,7 @@ class ModelSelectorBase(ABC, MetaEstimatorMixin):
         :param metrics: Object that defines the quality of predictions
            (ex. metrics.accuracy_score in scikit-learn)
         """
-        self.base_estimators = estimators # [e.__class__() for e in estimators]
+        self.base_estimators = estimators  # [e.__class__() for e in estimators]
         self.fitted_estimators = fitted_estimators
         self.best_model_index = 0
         self.metrics = metrics
@@ -52,7 +55,9 @@ class ModelSelectorBase(ABC, MetaEstimatorMixin):
         trained_models = []
         for estimator in self.base_estimators:
             estimator.n_features_in_ = X.shape[1]
-            trained_models.append(_model_fit.remote(model=estimator, X=X, y=y, classes=classes))
+            trained_models.append(
+                _model_fit.remote(model=estimator, X=X, y=y, classes=classes)
+            )
         self.base_estimators = ray.get(trained_models)
 
     @abstractmethod
@@ -79,7 +84,7 @@ class ModelSelectorBase(ABC, MetaEstimatorMixin):
                Labels (ground truth) for the target variable.
         :return: int. Returns the index of the best model based on user defined metrics.
         """
-        self.best_model_index = self._get_best_model_index(X,y)
+        self.best_model_index = self._get_best_model_index(X, y)
         return self.best_model_index
 
     def predict_proba(self, X):

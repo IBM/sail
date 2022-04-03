@@ -7,7 +7,7 @@ parallelizable, incremental and batch learning algorithms.
 import typing
 from river import base
 from river import optim
-from sail.ensemble.base import BaseAggregator
+from sail.models.ensemble.base import BaseAggregator
 from river.compat import convert_river_to_sklearn
 import ray
 import numpy as np
@@ -22,7 +22,7 @@ class DistAggregateClassifier(BaseAggregator):
         estimators: typing.List[base.Classifier],
         fitted_estimators: typing.List[base.Classifier] = [],
         learning_rate=0.5,
-        aggregator="maximization"
+        aggregator="maximization",
     ):
         """
         :param estimators: Estimator objects with partial_fit defined
@@ -37,9 +37,13 @@ class DistAggregateClassifier(BaseAggregator):
         self.learning_rate = learning_rate
         self.weights = [1.0] * len(estimators)
         self.aggregator = aggregator
-        estimators = [convert_river_to_sklearn(est) if "river" in est.__module__ else est
-                      for est in estimators]
-        super().__init__(base_estimators=estimators, fitted_estimators=fitted_estimators)
+        estimators = [
+            convert_river_to_sklearn(est) if "river" in est.__module__ else est
+            for est in estimators
+        ]
+        super().__init__(
+            base_estimators=estimators, fitted_estimators=fitted_estimators
+        )
 
     def _partial_fit(self, X, y=None, classes=None, **kwargs):
         """
@@ -94,7 +98,11 @@ class DistAggregateClassifier(BaseAggregator):
         # majority vote
         if self.aggregator == "majority_vote":
             n_samples, n_estimators = X_ensemble.shape[0], X_ensemble.shape[1]
-            vote_results = np.zeros([n_samples, ])
+            vote_results = np.zeros(
+                [
+                    n_samples,
+                ]
+            )
             for i in range(n_samples):
                 values, counts = np.unique(X_ensemble[i], return_counts=True)
                 ind = np.argmax(counts)

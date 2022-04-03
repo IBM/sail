@@ -1,6 +1,6 @@
 import unittest
 from river import linear_model, optim
-from sail.ensemble.distAggregateClassifier import DistAggregateClassifier
+from sail.models.ensemble.distAggregateClassifier import DistAggregateClassifier
 import numpy as np
 from array import array
 import ray
@@ -9,7 +9,6 @@ import warnings
 
 
 class TestDistAggregateClassifier(unittest.TestCase):
-
     def setUp(self):
         warnings.simplefilter("ignore", ResourceWarning)
 
@@ -31,11 +30,14 @@ class TestDistAggregateClassifier(unittest.TestCase):
 
         # prepare the ensemble
         learner = DistAggregateClassifier(
-            estimators=[linear_model.LogisticRegression(optimizer=o, intercept_lr=.1)
-                                           for o in optimizers])
+            estimators=[
+                linear_model.LogisticRegression(optimizer=o, intercept_lr=0.1)
+                for o in optimizers
+            ]
+        )
         cnt = 0
         max_samples = 50
-        y_pred = array('i')
+        y_pred = array("i")
         X_batch = []
         y_batch = []
         wait_samples = 10
@@ -50,16 +52,20 @@ class TestDistAggregateClassifier(unittest.TestCase):
             learner.partial_fit(X, y, classes=stream.target_values)
             cnt += 1
 
-        expected_predictions = array('i', [1, 1, 1, 0])
+        expected_predictions = array("i", [1, 1, 1, 0])
         assert np.all(y_pred == expected_predictions)
         assert type(learner.predict(X)) == np.ndarray
 
         learner = DistAggregateClassifier(
-            estimators=[linear_model.LogisticRegression(optimizer=o, intercept_lr=.1)
-                                           for o in optimizers], aggregator="majority_vote")
+            estimators=[
+                linear_model.LogisticRegression(optimizer=o, intercept_lr=0.1)
+                for o in optimizers
+            ],
+            aggregator="majority_vote",
+        )
         cnt = 0
         max_samples = 50
-        y_pred = array('i')
+        y_pred = array("i")
         X_batch = []
         y_batch = []
         wait_samples = 10
@@ -74,10 +80,10 @@ class TestDistAggregateClassifier(unittest.TestCase):
             learner.partial_fit(X, y, classes=stream.target_values)
             cnt += 1
 
-        expected_predictions = array('i', [1, 1, 1, 1])
+        expected_predictions = array("i", [1, 1, 1, 1])
         assert np.all(y_pred == expected_predictions)
         assert type(learner.predict(X)) == np.ndarray
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     unittest.main()

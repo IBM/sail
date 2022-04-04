@@ -23,7 +23,7 @@ setup(
         "tensorflow": ["tensorflow==2.8.0", "scikeras==0.6.1"],
         "pytorch": ["torch==1.10.2", "skorch==0.11.0"],
         "river": ["river==0.10.1"],
-        "ray": ["ray>==1.11.0"],
+        "ray": ["ray==1.11.0"],
         "all": [
             "tensorflow==2.8.0",
             "scikeras==0.6.1",

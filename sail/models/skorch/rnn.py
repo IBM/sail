@@ -1,77 +1,103 @@
 import torch
 import torch.nn as nn
 from skorch.regressor import NeuralNetRegressor
+from skorch.classifier import NeuralNetClassifier
 
 
-class RNNModel(nn.Module):
-    def __init__(self, input_dim, hidden_dim, layer_dim, output_dim, dropout_prob):
-        """The __init__ method that initiates an RNN instance.
+class _RNNModel(nn.Module):
+    """Basic RNN/GRU model.
 
-        Args:
-            input_dim (int): The number of nodes in the input layer
-            hidden_dim (int): The number of nodes in each layer
-            layer_dim (int): The number of layers in the network
-            output_dim (int): The number of nodes in the output layer
-            dropout_prob (float): The probability of nodes being dropped out
+    Args:
+        input_units (int): Number of input units
+        output_units (int): Number of output units
+        hidden_units (int): Number of hidden units
+        n_hidden_layers (int): Number of hidden layers
+        output_nonlin (torch.nn.Module instance or None (default=nn.Linear)):
+            Non-linearity to apply after last layer, if any.
+        dropout (float): Dropout
+        squeeze_output (bool): default=False
+            Whether to squeeze output. For Skorch consistency.
+            https://github.com/skorch-dev/skorch/blob/master/skorch/toy.py
+        cell_type (string): default="RNN"
+    """
+    def __init__(self, input_units, output_units, hidden_units,
+                 n_hidden_layers=1, dropout=0.2, output_nonlin = nn.Linear, squeeze_output=False,
+                 cell_type="RNN"):
+        super(_RNNModel, self).__init__()
+        self.input_units = input_units
+        self.output_units = output_units
+        self.hidden_units = hidden_units
+        self.n_hidden_layers = n_hidden_layers
+        self.output_nonlin = output_nonlin
+        self.squeeze_output = squeeze_output
+        if cell_type == "RNN":
+            rnn = nn.RNNCell
+        elif cell_type == "GRU":
+            rnn = nn.GRUCell
+        else:
+            raise ValueError(f"RNN type {cell_type} is not supported. supported: [RNN, GRU]")
 
-        """
-        super(RNNModel, self).__init__()
+        self.rnns = nn.ModuleList(
+            [rnn(self.input_units, self.hidden_units)] +
+            [rnn(self.hidden_units, self.hidden_units) for i in range(self.n_hidden_layers - 1)])
 
-        # Defining the number of layers and the nodes in each layer
-        self.hidden_dim = hidden_dim
-        self.layer_dim = layer_dim
+        if self.output_nonlin:
+            self.out = self.output_nonlin(self.hidden_units, self.output_units)
+        self.do = nn.Dropout(p=dropout)
+        self.actfn = nn.Tanh()
+        self.device = torch.device('cpu')
+        self.dtype = torch.float
 
-        # RNN layers
-        self.rnn = nn.RNN(
-            input_dim, hidden_dim, layer_dim, batch_first=True, dropout=dropout_prob
-        )
-        # Fully connected layer
-        self.fc = nn.Linear(hidden_dim, output_dim)
+    def forward(self, x, h0=None, train=False):
 
-    def forward(self, x):
-        """The forward method takes input tensor x and does forward propagation
+        hs = x  # initiate hidden state
+        if h0 is None:
+            h = torch.zeros(hs.shape[0], self.hidden_units)
+            c = torch.zeros(hs.shape[0], self.hidden_units)
+        else:
+            (h, c) = h0
 
-        Args:
-            x (torch.Tensor): The input tensor of the shape (batch size, sequence length, input_dim)
+        # RNN cells
+        for i in range(self.n_hidden_layers):
+            h = self.rnns[i](hs, h)
+            if train:
+                hs = self.do(h)
+            else:
+                hs = h
+        y = self.out(hs)
+        # return y, (h,c)
 
-        Returns:
-            torch.Tensor: The output tensor of the shape (batch size, output_dim)
-
-        """
-        # Initializing hidden state for first input with zeros
-        h0 = torch.zeros(self.layer_dim, x.size(0), self.hidden_dim).requires_grad_()
-
-        # Forward propagation by passing in the input and hidden state into the model
-        out, h0 = self.rnn(x, h0.detach())
-
-        # Reshaping the outputs in the shape of (batch_size, seq_length, hidden_size)
-        # so that it can fit into the fully connected layer
-        out = out[:, -1, :]
-
-        # Convert the final state to our desired output shape (batch_size, output_dim)
-        out = self.fc(out)
-        return out
+        return y
 
 
-class ContextlessMSE(torch.nn.MSELoss):
-    def forward(self, y_pred, y_true):
-        y, (h, c) = y_pred # extract prediction and context information
-        return super().forward(y, y_true)
+class RNNRegressor(NeuralNetRegressor):
+    """Basic RNN/LSTM/GRU model.
 
-
-
-class RNNRegressor:
-    def __init__(self, input_dim, output_dim, hidden_dim, layer_dim):
-        self.net = NeuralNetRegressor(
-    module=RNNModel,
-    module__input_dim=input_dim,
-    module__output_dim=output_dim,
-    module__hidden_dim=hidden_dim,
-    module__layer_dim=layer_dim,
-    max_epochs=20,
-    lr=0.1
-    #     device='cuda',  # uncomment this to train with CUDA
-    )
-
-    def fit(self, X, y):
-        self.net.fit(X, y)
+    Args:
+        input_units (int): Number of input units
+        output_units (int): Number of output units
+        hidden_units (int): Number of hidden units
+        n_hidden_layers (int): Number of hidden layers
+        output_nonlin (torch.nn.Module instance or None (default=nn.Linear)):
+            Non-linearity to apply after last layer, if any.
+        dropout (float): Dropout
+        squeeze_output (bool): default=False
+            Whether to squeeze output. Skorch requirement.
+        cell_type (string): default="RNN"
+        **kwargs: Arbitrary keyword arguments
+    """
+    def __init__(self, input_units, output_units, hidden_units,
+                 n_hidden_layers=1, dropout=0.2, output_nonlin = nn.Linear, squeeze_output=False,
+                 cell_type="RNN", **kwargs):
+        super(RNNRegressor, self).__init__(
+            module=_RNNModel,
+            module__input_units=input_units,
+            module__output_units=output_units,
+            module__hidden_units=hidden_units,
+            module__n_hidden_layers=n_hidden_layers,
+            module__dropout=dropout,
+            module__output_nonlin=output_nonlin,
+            module__squeeze_output=squeeze_output,
+            module__cell_type=cell_type,
+            train_split=None, max_epochs=1, batch_size=20,
+            **kwargs)

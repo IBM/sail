@@ -1,5 +1,5 @@
 from turtle import shape
-from sail.models.scikeras import OSELM
+from sail.models.keras import OSELM
 import tensorflow.keras as keras
 import numpy as np
 import pandas as pd

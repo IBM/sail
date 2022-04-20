@@ -1,74 +1,11 @@
 """
-Test
+Keras wrapper for The Online Sequential Extreme Learning Machine (OSELM).
 """
+
 import tensorflow as tf
-
-from .base import TFKerasRegressorWrapper, KerasBaseModel
+from scikeras.wrappers import KerasRegressor
+from .base import KerasBaseModel
 from tensorflow.python.keras.engine import data_adapter
-
-
-class OSELM(TFKerasRegressorWrapper):
-    """
-    Keras wrapper for The Online Sequential Extreme Learning Machine (OSELM).
-
-    The Online Sequential Extreme Learning Machine (OSELM) is an online sequential learning algorithm for single hidden layer feed forward neural networks that learns the train data one-by-one or chunk-by-chunk without retraining all the historic data. It gives better generalization performance at very fast learning speed.
-
-    OSELM being SLFN (single hidden layer feedforward neural network), does not use a loss fn to calculate gradients. It has no other control parameters for users to mannually tuning.
-
-    Parameters
-    ----------
-
-        optimizer : Union[str, tf.keras.optimizers.Optimizer, Type[tf.keras.optimizers.Optimizer]], default "Adam"
-
-        loss : Union[Union[str, tf.keras.losses.Loss, Type[tf.keras.losses.Loss], default="mse"
-
-        metrics : List[str], default=None
-            list of metrics to be evaluated.
-
-        num_hidden_nodes : int, default=100
-            number of neurons to use in the hidden layer.
-
-        hidden_layer_activation : str, default=sigmoid
-            Activation function to apply on the hidden layer - can use any tf.keras.activation function name.
-
-        prediction_window_size: int, default=1
-            number of timeseries steps to predict in the future.
-
-        forgetting_factor: float, default=0.9
-            The forgetting factor can be set in order to forget the old observations quickly and track the new data tightly.
-
-        epochs: int, default=1
-            Number of training steps.
-
-        verbose: int default=0
-            To display/supress logs.
-    """
-
-    def __init__(
-        self,
-        loss="mse",
-        optimizer=tf.keras.optimizers.Adam,
-        metrics=None,
-        epochs=1,
-        verbose=0,
-        num_hidden_nodes=25,
-        hidden_layer_activation=tf.nn.sigmoid,
-        prediction_window_size=1,
-        forgetting_factor=0.5,
-    ) -> None:
-
-        super(OSELM, self).__init__(
-            model=_Model,
-            loss=loss,
-            optimizer=optimizer,
-            metrics=metrics,
-            epochs=epochs,
-            verbose=verbose,
-            num_hidden_nodes=num_hidden_nodes,
-            hidden_layer_activation=hidden_layer_activation,
-            prediction_window_size=prediction_window_size,
-            forgetting_factor=forgetting_factor,
-        )
 
 
 class _Model(KerasBaseModel):
@@ -227,3 +164,72 @@ class _Model(KerasBaseModel):
         self.update_metrics(targets, predictions)
 
         return {m.name: m.result() for m in self.metrics}
+
+
+class OSELM(KerasRegressor):
+    """
+    Keras wrapper for The Online Sequential Extreme Learning Machine (OSELM).
+
+    The Online Sequential Extreme Learning Machine (OSELM) is an online sequential learning algorithm for single hidden layer feed forward neural networks that learns the train data one-by-one or chunk-by-chunk without retraining all the historic data. It gives better generalization performance at very fast learning speed.
+
+    OSELM being SLFN (single hidden layer feedforward neural network), does not use a loss fn to calculate gradients. It has no other control parameters for users to mannually tuning.
+
+    Parameters
+    ----------
+
+        optimizer : Union[str, tf.keras.optimizers.Optimizer, Type[tf.keras.optimizers.Optimizer]], default "adam"
+            This can be a string for Keras' built in optimizersan instance of tf.keras.optimizers.Optimizer or a class inheriting from tf.keras.optimizers.Optimizer. Only strings and classes support parameter routing.
+
+        loss : Union[Union[str, tf.keras.losses.Loss, Type[tf.keras.losses.Loss], Callable], None], default="mse"
+            The loss function to use for training. This can be a string for Keras' built in losses, an instance of tf.keras.losses.Loss or a class inheriting from tf.keras.losses.Loss .
+
+        metrics : List[str], default=None
+            list of metrics to be evaluated.
+
+        num_hidden_nodes : int, default=100
+            number of neurons to use in the hidden layer.
+
+        hidden_layer_activation : str, default=sigmoid
+            Activation function to apply on the hidden layer - can use any tf.keras.activation function name.
+
+        prediction_window_size: int, default=1
+            number of timeseries steps to predict in the future.
+
+        forgetting_factor: float, default=0.9
+            The forgetting factor can be set in order to forget the old observations quickly and track the new data tightly.
+
+        epochs: int, default=1
+            Number of training steps.
+
+        verbose: int default=0
+            To display/supress logs.
+    """
+
+    def __init__(
+        self,
+        loss="mse",
+        optimizer=tf.keras.optimizers.Adam,
+        metrics=None,
+        epochs=1,
+        verbose=0,
+        num_hidden_nodes=25,
+        hidden_layer_activation=tf.nn.sigmoid,
+        prediction_window_size=1,
+        forgetting_factor=0.5,
+        **kwargs
+    ) -> None:
+
+        super(OSELM, self).__init__(
+            _Model(
+                num_hidden_nodes,
+                hidden_layer_activation,
+                prediction_window_size,
+                forgetting_factor,
+            ),
+            loss=loss,
+            optimizer=optimizer,
+            metrics=metrics,
+            epochs=epochs,
+            verbose=verbose,
+            **kwargs
+        )

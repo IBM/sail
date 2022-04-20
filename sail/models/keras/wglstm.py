@@ -4,8 +4,7 @@ Weighted Gradient learning based LSTM (WGLSTM) neural network
 Code adapted from https://github.com/weilai0980/onlineLearning
 """
 
-# pyright: reportMissingImports=false
-
+import tensorflow as tf
 from tensorflow.keras.models import Sequential
 from tensorflow.keras.regularizers import l2
 from tensorflow.keras.optimizers import SGD
@@ -21,102 +20,9 @@ import numpy as np
 from numpy.lib.scimath import sqrt
 from types import SimpleNamespace
 from sail.visualisation.ts_plot import plot_series
-
-from .base import TFKerasRegressorWrapper
+from scikeras.wrappers import KerasRegressor
 from sail.utils.stats import nmse
-from sail.models.base import SAILWrapper
-
-
-class WGLSTM(TFKerasRegressorWrapper, SAILWrapper):
-    """
-    Keras wrapper for Weighted Gradient learning based LSTM (WGLSTM)
-    neural network in online learning of time series.
-
-    WGLSTM is an adaptive gradient learning method for recurrent neural
-    networks (RNN) to forecast streaming time series in the presence of
-    anomalies and change points.
-
-    It leverage local features, which are extracted from a sliding window
-    over time series, to dynamically weight the gradient, at each time instant
-    for updating the current neural network.
-
-    Parameters
-    ----------
-
-        optimizer : Union[str, tf.keras.optimizers.Optimizer,
-        Type[tf.keras.optimizers.Optimizer]], default "sgd"
-            This can be a string for Keras' built in optimizersan instance of
-            tf.keras.optimizers.Optimizer or a class inheriting from
-            tf.keras.optimizers.Optimizer. Only strings and classes support
-            parameter routing.
-
-        loss : Union[Union[str, tf.keras.losses.Loss, Callable], None],
-        default="mse"
-            The loss function to use for training. This can be a string for
-            Keras' built in losses, an instance of tf.keras.losses.Loss or a
-            class inheriting from tf.keras.losses.Loss .
-
-        metrics : List[str], default=None
-            List of metrics to evaluate and report at each epoch.
-
-        hidden_layer_activation : str, default=linear
-            What activation to use on the hidden layer - can use any
-            tf.keras.activation function name.
-
-        hidden_layer_neurons: int, default=450
-            number of neurons to use for learning in the hidden layer.
-
-        regularization_factor: float, default=0.0001
-            The regularization factor to used during the training.
-
-        timesteps: int, default=1
-            The amount of time steps to run your recurrent neural network.
-
-        num_of_features : int, default=1
-            Number of feature variables in every time step.
-
-        window_size: int, default=20
-            The size of the sliding window for feature extraction.
-
-        epochs: int, default=1
-            Number of training steps.
-
-        verbose: int default=0
-            0 means no output printed during training.
-
-    """
-
-    def __init__(
-        self,
-        loss="mse",
-        optimizer=SGD(learning_rate=0.002, momentum=0.03, decay=0.0, nesterov=True),
-        metrics=None,
-        epochs=1,
-        verbose=0,
-        num_of_features=1,
-        hidden_layer_neurons=450,
-        hidden_layer_activation="linear",
-        regularization_factor=0.0001,
-        timesteps=1,
-        window_size=20,
-        **kwargs,
-    ) -> None:
-
-        super(WGLSTM, self).__init__(
-            model=_Model,
-            loss=loss,
-            optimizer=optimizer,
-            metrics=metrics,
-            epochs=epochs,
-            verbose=verbose,
-            num_of_features=num_of_features,
-            hidden_layer_neurons=hidden_layer_neurons,
-            hidden_layer_activation=hidden_layer_activation,
-            regularization_factor=regularization_factor,
-            timesteps=timesteps,
-            window_size=window_size,
-            **kwargs,
-        )
+from sail.visualisation.ts_plot import plot_series
 
 
 class _Model(Sequential):
@@ -226,6 +132,7 @@ class _Model(Sequential):
                             testval,
                         )
                     else:
+                        pass
                         print(
                             "suspicous points at ",
                             i + 1,
@@ -285,6 +192,14 @@ class _Model(Sequential):
                 y_pred.append(pred_test)
 
         print("Normalised MSE: ", nmse(y_orig, y_pred))
+
+        # plot_series(
+        #     y_orig,
+        #     y_pred,
+        #     plot_title="Online Prediction by WGSLTM on Bike rental",
+        #     save_path="plot_wglstm.png",
+        # )
+
         return SimpleNamespace(history={m.name: m.result() for m in self.metrics})
 
     def sliding_window_features(self, cur_pos, dataX, dataY, susp_list):
@@ -377,3 +292,96 @@ class _Model(Sequential):
             tmpw = 1.0
 
         return tmpw
+
+
+class WGLSTM(KerasRegressor):
+    """
+    Keras wrapper for Weighted Gradient learning based LSTM (WGLSTM)
+    neural network in online learning of time series.
+
+    WGLSTM is an adaptive gradient learning method for recurrent neural
+    networks (RNN) to forecast streaming time series in the presence of
+    anomalies and change points.
+
+    It leverage local features, which are extracted from a sliding window
+    over time series, to dynamically weight the gradient, at each time instant
+    for updating the current neural network.
+
+    Parameters
+    ----------
+
+        optimizer : Union[str, tf.keras.optimizers.Optimizer,
+        Type[tf.keras.optimizers.Optimizer]], default "sgd"
+            This can be a string for Keras' built in optimizersan instance of
+            tf.keras.optimizers.Optimizer or a class inheriting from
+            tf.keras.optimizers.Optimizer. Only strings and classes support
+            parameter routing.
+
+        loss : Union[Union[str, tf.keras.losses.Loss, Callable], None],
+        default="mse"
+            The loss function to use for training. This can be a string for
+            Keras' built in losses, an instance of tf.keras.losses.Loss or a
+            class inheriting from tf.keras.losses.Loss .
+
+        metrics : List[str], default=None
+            List of metrics to evaluate and report at each epoch.
+
+        hidden_layer_activation : str, default=linear
+            What activation to use on the hidden layer - can use any
+            tf.keras.activation function name.
+
+        hidden_layer_neurons: int, default=450
+            number of neurons to use for learning in the hidden layer.
+
+        regularization_factor: float, default=0.0001
+            The regularization factor to used during the training.
+
+        timesteps: int, default=1
+            The amount of time steps to run your recurrent neural network.
+
+        num_of_features : int, default=1
+            Number of feature variables in every time step.
+
+        window_size: int, default=20
+            The size of the sliding window for feature extraction.
+
+        epochs: int, default=1
+            Number of training steps.
+
+        verbose: int default=0
+            0 means no output printed during training.
+
+    """
+
+    def __init__(
+        self,
+        loss="mse",
+        optimizer=SGD(lr=0.002, momentum=0.03, decay=0.0, nesterov=True),
+        metrics=None,
+        epochs=1,
+        verbose=0,
+        num_of_features=1,
+        hidden_layer_neurons=450,
+        hidden_layer_activation="linear",
+        regularization_factor=0.0001,
+        timesteps=1,
+        window_size=20,
+        **kwargs,
+    ) -> None:
+
+        super(WGLSTM, self).__init__(
+            _Model(
+                num_of_features,
+                hidden_layer_neurons,
+                hidden_layer_activation,
+                regularization_factor,
+                timesteps,
+                window_size,
+            ),
+            loss=loss,
+            optimizer=optimizer,
+            metrics=metrics,
+            epochs=epochs,
+            verbose=verbose,
+            **kwargs,
+        )

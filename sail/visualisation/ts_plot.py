@@ -10,7 +10,7 @@ def plot_series(
     plot_title="Time Series Plot",
     xaxis_label="Timestep",
     yaxis_label="Value",
-    ybound=[0, 6],
+    ybound=None,
     save_path=None,
     ts_timestamp=[],
 ):
@@ -28,7 +28,7 @@ def plot_series(
         _description_
     yaxis_label : str, default="Value"
         _description_
-    ybound : list, default=[0, 6]
+    ybound : list, default=None
         y-axis range for time series plot.
     save_path : str, default=None
         Location with file name to save the time series plot.
@@ -75,8 +75,12 @@ def plot_series(
     axes = plt.gca()
     axes.set_xlim([1, total_predictions + 10])
 
-    if len(ybound) != 0:
-        axes.set_ylim([ybound[0], ybound[1]])
+    if ybound is None:
+        ybound = [0, max(y_orig + y_pred)]
+    assert (
+        len(ybound) == 2
+    ), "ybound must have a lower bound and an upper bound. Ex: [0, 6]"
+    axes.set_ylim([ybound[0], ybound[1]])
 
     if save_path is not None:
         fig.savefig(

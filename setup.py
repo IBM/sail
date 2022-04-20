@@ -18,6 +18,7 @@ setup(
         "scikit-multiflow==0.5.3",
         "matplotlib",
         "setuptools",
+        "ipykernel",
     ],
     extras_require={
         "tensorflow": ["tensorflow==2.8.0", "scikeras==0.6.1"],

@@ -2,7 +2,7 @@
 import copy
 import numpy as np
 from sklearn.tree import DecisionTreeClassifier
-from skmultiflow.core import BaseSKMObject, ClassifierMixin, MetaEstimatorMixin
+from sail.models.native import BaseSailObject, ClassifierMixin, MetaEstimatorMixin
 from skmultiflow.utils import check_random_state
 import warnings
 
@@ -19,7 +19,7 @@ def LearnPP(base_estimator=DecisionTreeClassifier(), error_threshold=0.5, n_esti
                              random_state=random_state)
 
 
-class LearnPPClassifier(BaseSKMObject, ClassifierMixin, MetaEstimatorMixin):
+class LearnPPClassifier(BaseSailObject, ClassifierMixin, MetaEstimatorMixin):
     """ Learn++ ensemble classifier.
 
     Learn++ [1]_  does not require access to previously used data during

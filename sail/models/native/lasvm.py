@@ -6,7 +6,7 @@ import numpy as np
 from tqdm import tqdm
 
 from lasvm.base_kernel_method import BaseKernelMethod
-from sail.imla.base import BaseEstimator
+from sail.models.native.base import BaseEstimator
 
 __all__ = [
     'LaSVM'

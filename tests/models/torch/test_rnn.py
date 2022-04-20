@@ -8,7 +8,7 @@ import pytest
 class TestRNN:
     @pytest.fixture
     def net(self):
-        from sail.models.skorch.rnn import RNNRegressor
+        from sail.models.torch.rnn import RNNRegressor
         return RNNRegressor(input_units=10, output_units=1, hidden_units=20,
                             n_hidden_layers=3, lr=0.01, cell_type="RNN")
 

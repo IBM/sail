@@ -233,3 +233,7 @@ class OSELM(KerasRegressor):
             verbose=verbose,
             **kwargs
         )
+    
+    def _ensure_compiled_model(self)-> None:
+        super()._ensure_compiled_model()
+        self.model_.outputs = [1]*self.n_outputs_

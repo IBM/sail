@@ -22,9 +22,8 @@ numLags = 100
 predictionStep = 5
 
 df = pd.read_csv(
-    "/Users/dhaval/Projects/MORE/forecasting/data/nyc_taxi.csv",
+    "examples/datasets/nyc_taxi.csv",
     header=0,
-    skiprows=[1, 2],
     names=["time", "data", "timeofday", "dayofweek"],
 )
 df.head(5)

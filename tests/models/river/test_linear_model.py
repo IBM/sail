@@ -8,7 +8,7 @@ from sail.models.river.linear_model import LinearRegression, LogisticRegression
 from sail.models.river.preprocessing import StandardScaler
 
 
-class TestLinearRegression:
+class TestLinearModel:
     @pytest.fixture
     def regression_dataset(self):
         X, y = datasets.load_diabetes(return_X_y=True)

@@ -17,6 +17,7 @@ setup(
         "scikit-learn>=0.24.2",
         "scikit-multiflow==0.5.3",
         "matplotlib",
+        "logzero",
         "setuptools",
         "ipykernel",
     ],
@@ -25,6 +26,7 @@ setup(
         "pytorch": ["torch==1.10.2", "skorch==0.11.0"],
         "river": ["river==0.10.1"],
         "ray": ["ray==1.11.0"],
+        "dev": ["black", "pylint"],
         "all": [
             "tensorflow==2.8.0",
             "scikeras==0.6.1",

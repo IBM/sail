@@ -1,5 +1,6 @@
 setuptools
 matplotlib
+logzero
 ipykernel
 numpy>=1.21.0
 scipy>=1.5.2

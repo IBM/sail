@@ -1,7 +1,7 @@
 import torch
 import torch.nn as nn
 from skorch.regressor import NeuralNetRegressor
-from skorch.classifier import NeuralNetClassifier
+from sail.models.torch.base import TorchSerializationMixin
 
 
 class _RNNModel(nn.Module):
@@ -20,9 +20,18 @@ class _RNNModel(nn.Module):
             https://github.com/skorch-dev/skorch/blob/master/skorch/toy.py
         cell_type (string): default="RNN"
     """
-    def __init__(self, input_units, output_units, hidden_units,
-                 n_hidden_layers=1, dropout=0.2, output_nonlin = nn.Linear, squeeze_output=False,
-                 cell_type="RNN"):
+
+    def __init__(
+        self,
+        input_units,
+        output_units,
+        hidden_units,
+        n_hidden_layers=1,
+        dropout=0.2,
+        output_nonlin=nn.Linear,
+        squeeze_output=False,
+        cell_type="RNN",
+    ):
         super(_RNNModel, self).__init__()
         self.input_units = input_units
         self.output_units = output_units
@@ -35,17 +44,23 @@ class _RNNModel(nn.Module):
         elif cell_type == "GRU":
             rnn = nn.GRUCell
         else:
-            raise ValueError(f"RNN type {cell_type} is not supported. supported: [RNN, GRU]")
+            raise ValueError(
+                f"RNN type {cell_type} is not supported. supported: [RNN, GRU]"
+            )
 
         self.rnns = nn.ModuleList(
-            [rnn(self.input_units, self.hidden_units)] +
-            [rnn(self.hidden_units, self.hidden_units) for i in range(self.n_hidden_layers - 1)])
+            [rnn(self.input_units, self.hidden_units)]
+            + [
+                rnn(self.hidden_units, self.hidden_units)
+                for i in range(self.n_hidden_layers - 1)
+            ]
+        )
 
         if self.output_nonlin:
             self.out = self.output_nonlin(self.hidden_units, self.output_units)
         self.do = nn.Dropout(p=dropout)
         self.actfn = nn.Tanh()
-        self.device = torch.device('cpu')
+        self.device = torch.device("cpu")
         self.dtype = torch.float
 
     def forward(self, x, h0=None, train=False):
@@ -70,7 +85,7 @@ class _RNNModel(nn.Module):
         return y
 
 
-class RNNRegressor(NeuralNetRegressor):
+class RNNRegressor(NeuralNetRegressor, TorchSerializationMixin):
     """Basic RNN/LSTM/GRU model.
 
     Args:
@@ -86,9 +101,19 @@ class RNNRegressor(NeuralNetRegressor):
         cell_type (string): default="RNN"
         **kwargs: Arbitrary keyword arguments
     """
-    def __init__(self, input_units, output_units, hidden_units,
-                 n_hidden_layers=1, dropout=0.2, output_nonlin = nn.Linear, squeeze_output=False,
-                 cell_type="RNN", **kwargs):
+
+    def __init__(
+        self,
+        input_units,
+        output_units,
+        hidden_units,
+        n_hidden_layers=1,
+        dropout=0.2,
+        output_nonlin=nn.Linear,
+        squeeze_output=False,
+        cell_type="RNN",
+        **kwargs,
+    ):
         super(RNNRegressor, self).__init__(
             module=_RNNModel,
             module__input_units=input_units,
@@ -99,5 +124,8 @@ class RNNRegressor(NeuralNetRegressor):
             module__output_nonlin=output_nonlin,
             module__squeeze_output=squeeze_output,
             module__cell_type=cell_type,
-            train_split=None, max_epochs=1, batch_size=20,
-            **kwargs)
+            train_split=None,
+            max_epochs=1,
+            batch_size=20,
+            **kwargs,
+        )

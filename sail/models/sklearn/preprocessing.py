@@ -18,7 +18,7 @@ from sklearn.preprocessing._data import minmax_scale
 from sklearn.preprocessing._data import quantile_transform
 from sklearn.preprocessing._data import power_transform
 from sklearn.preprocessing._data import PowerTransformer
-from sklearn.preprocessing._data import PolynomialFeatures
+from sklearn.preprocessing import PolynomialFeatures
 
 from sklearn.preprocessing._encoders import OneHotEncoder
 from sklearn.preprocessing._encoders import OrdinalEncoder
@@ -32,31 +32,31 @@ from sklearn.preprocessing._discretization import KBinsDiscretizer
 
 
 __all__ = [
-    'Binarizer',
-    'FunctionTransformer',
-    'KBinsDiscretizer',
-    'KernelCenterer',
-    'LabelBinarizer',
-    'LabelEncoder',
-    'MultiLabelBinarizer',
-    'MinMaxScaler',
-    'MaxAbsScaler',
-    'QuantileTransformer',
-    'Normalizer',
-    'OneHotEncoder',
-    'OrdinalEncoder',
-    'PowerTransformer',
-    'RobustScaler',
-    'StandardScaler',
-    'add_dummy_feature',
-    'PolynomialFeatures',
-    'binarize',
-    'normalize',
-    'scale',
-    'robust_scale',
-    'maxabs_scale',
-    'minmax_scale',
-    'label_binarize',
-    'quantile_transform',
-    'power_transform',
+    "Binarizer",
+    "FunctionTransformer",
+    "KBinsDiscretizer",
+    "KernelCenterer",
+    "LabelBinarizer",
+    "LabelEncoder",
+    "MultiLabelBinarizer",
+    "MinMaxScaler",
+    "MaxAbsScaler",
+    "QuantileTransformer",
+    "Normalizer",
+    "OneHotEncoder",
+    "OrdinalEncoder",
+    "PowerTransformer",
+    "RobustScaler",
+    "StandardScaler",
+    "add_dummy_feature",
+    "PolynomialFeatures",
+    "binarize",
+    "normalize",
+    "scale",
+    "robust_scale",
+    "maxabs_scale",
+    "minmax_scale",
+    "label_binarize",
+    "quantile_transform",
+    "power_transform",
 ]

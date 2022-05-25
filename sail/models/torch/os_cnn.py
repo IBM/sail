@@ -133,7 +133,6 @@ class _OS_CNN(nn.Module):
         start_kernel_size = 1,
         max_kernel_size = 89,
         paramenter_number_of_layer_list = [8*128, 5*128*256 + 2*256*128],
-        device = "cpu",
         few_shot = False
     ):
         super(_OS_CNN, self).__init__()
@@ -143,7 +142,6 @@ class _OS_CNN(nn.Module):
         self.paramenter_number_of_layer_list = paramenter_number_of_layer_list
         self.input_channel = input_channel
         self.receptive_field_shape = receptive_field_shape
-        self.device = device
         
         layer_parameter_list = generate_layer_parameter_list(self.start_kernel_size,
                                                      receptive_field_shape,
@@ -182,11 +180,25 @@ class _OS_CNN(nn.Module):
 
 class OS_CNN_CLassifier(NeuralNetClassifier):
     """
-    Docstring
+    Basic OS_CNN model
+    
+    Args:
+        n_class: Number of classes to predict]
+        input_channel: Number of input channels. varies depending on data type (univariate and multivariate)
+        receptive_field_shape: Scales of receptive fields to avoid scale tuning 
+        start_kernel_size: Start kernel size. Must be a prime number 
+        max_kernel_size: Maximum kernel size. Must be a prime number
+        paramenter_number_of_layer_list: OS block layer size
+        device: cpu or gpu
+        max_epochs: Epoch number
+        batch_size: Size of the batch
+        criterion: Loss function
+        optimizer: Optimizer
+    
     """
     def __init__(
         self,
-        n_class, #number of classes to predict
+        n_class, 
         input_channel,
         receptive_field_shape,
         start_kernel_size = 1,
@@ -203,8 +215,8 @@ class OS_CNN_CLassifier(NeuralNetClassifier):
             module__start_kernel_size = start_kernel_size,
             module__max_kernel_size = max_kernel_size,
             module__paramenter_number_of_layer_list = paramenter_number_of_layer_list,
-            module__device = device,
             module__few_shot = few_shot,
+            device = device,
             max_epochs=20, 
             batch_size=16,
             criterion = nn.CrossEntropyLoss,

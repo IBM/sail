@@ -7,7 +7,7 @@
 import torch, skorch
 from torch import nn
 from skorch.classifier import NeuralNetClassifier
-from sail.models.torch.util import ConvBlock # The convolutional block using Conv1D with same padding.
+from sail.models.torch.layers import ConvBlock # The convolutional block using Conv1D with same padding.
 
 
 class _LSTM_FCN(nn.Module):

@@ -29,7 +29,6 @@ class _Chomp1d(nn.Module):
 
 
 class _TemporalBlock(nn.Module):
-
     def __init__(self, ni, nf, ks, stride, dilation, padding, dropout=0.0):
         """Initialises the Temporal Block
 
@@ -81,25 +80,6 @@ class _TemporalBlock(nn.Module):
         return self.relu(out + res)
 
 
-def TemporalConvNet(c_in, layers, ks=2, dropout=0.0):
-    temp_layers = []
-    for i in range(len(layers)):
-        dilation_size = 2 ** i
-        ni = c_in if i == 0 else layers[i - 1]
-        nf = layers[i]
-        temp_layers += [
-            _TemporalBlock(
-                ni,
-                nf,
-                ks,
-                stride=1,
-                dilation=dilation_size,
-                padding=(ks - 1) * dilation_size,
-                dropout=dropout,
-            )
-        ]
-    return nn.Sequential(*temp_layers)
-
 class _TemporalConvNet(nn.Module):
     def __init__(self, num_inputs, num_channels, kernel_size=2, dropout=0.2):
         super(_TemporalConvNet, self).__init__()
@@ -107,58 +87,78 @@ class _TemporalConvNet(nn.Module):
         num_levels = len(num_channels)
         for i in range(num_levels):
             dilation_size = 2 ** i
-            in_channels = num_inputs if i == 0 else num_channels[i-1]
+            in_channels = num_inputs if i == 0 else num_channels[i - 1]
             out_channels = num_channels[i]
-            layers += [_TemporalBlock(in_channels, out_channels, kernel_size, stride=1, dilation=dilation_size,
-                                     padding=(kernel_size-1) * dilation_size, dropout=dropout)]
+            layers += [
+                _TemporalBlock(
+                    in_channels,
+                    out_channels,
+                    kernel_size,
+                    stride=1,
+                    dilation=dilation_size,
+                    padding=(kernel_size - 1) * dilation_size,
+                    dropout=dropout,
+                )
+            ]
 
         self.network = nn.Sequential(*layers)
 
     def forward(self, x):
         return self.network(x)
 
+
 class _TCN(nn.Module):
-    def __init__(
-        self, c_in, c_out, layers=8 * [25], ks=7, conv_dropout=0.0, fc_dropout=0.0
-    ):
+    def __init__(self, c_in, c_out, layers, ks, conv_dropout, fc_dropout):
         super().__init__()
         self.tcn = _TemporalConvNet(c_in, layers, kernel_size=ks, dropout=conv_dropout)
         self.gap = _GAP1d()
         self.dropout = nn.Dropout(fc_dropout) if fc_dropout else None
         self.linear = nn.Linear(layers[-1], c_out)
         self.init_weights()
-        self.sig = nn.Sigmoid()
-
 
     def init_weights(self):
         self.linear.weight.data.normal_(0, 0.01)
 
     def forward(self, x):
+        print(x.shape)
         x = self.tcn(x)
         x = self.gap(x)
         if self.dropout is not None:
             x = self.dropout(x)
-        return self.sig(self.linear(x))
-
-
+        return self.linear(x)
 
 
 class TCNRegressor(NeuralNetRegressor):
     """Basic TCN model.
 
     Args:
-        num_inputs (int):
-        num_channels (list[int]):
-        kernel_size (int):
-        dropout (float):
+        c_in (int): number of input channels
+        c_out (int): number of output channels
+        layers (list): number of channels in each TCN layer
+        ks (int): kernel size
+        conv_dropout (float): dropout rate for TCN convolutional layers
+        fc_dropout (float): dropout rate for FC layers
         **kwargs: Arbitrary keyword arguments
     """
 
-    def __init__(self, c_in: int, c_out: int, **kwargs):
+    def __init__(
+        self,
+        c_in: int,
+        c_out: int,
+        layers=8 * [25],
+        ks=7,
+        conv_dropout=0.1,
+        fc_dropout=0.1,
+        **kwargs
+    ):
         super(TCNRegressor, self).__init__(
             module=_TCN,
             module__c_in=c_in,
             module__c_out=c_out,
+            module__layers=layers,
+            module__ks=ks,
+            module__conv_dropout=conv_dropout,
+            module__fc_dropout=fc_dropout,
             train_split=None,
             max_epochs=1,
             batch_size=20,

@@ -5,25 +5,26 @@ Based on: https://github.com/skorch-dev/skorch/blob/master/skorch/tests/test_reg
 import numpy as np
 import pytest
 
+
 class TestTCN:
     @pytest.fixture
     def net(self):
         from sail.models.torch.tcn import TCNRegressor
-        return TCNRegressor(input_units=10, output_units=1, hidden_units=20,
-                            n_hidden_layers=3, lr=0.01, cell_type="RNN")
+
+        return TCNRegressor(c_in=10, c_out=1)
 
     @pytest.fixture
     def net_partial_fit(self, net, regression_data):
         X, y = regression_data
-        for i in range(1,3):
+        for _ in range(1, 3):
             net.partial_fit(X, y)
         return net
 
     def test_net_learns(self, net, regression_data):
         X, y = regression_data
-        for i in range(0,3):
+        for _ in range(3):
             net.partial_fit(X, y)
-        train_losses = net.history[:, 'train_loss']
+        train_losses = net.history[:, "train_loss"]
         assert train_losses[0] > train_losses[-1]
 
     def test_predict_predict_proba(self, net_partial_fit, regression_data):
@@ -40,4 +41,4 @@ class TestTCN:
     def test_score(self, net_partial_fit, regression_data):
         X, y = regression_data
         r2_score = net_partial_fit.score(X, y)
-        assert r2_score <= 1. and r2_score > 0.9
+        assert r2_score <= 1.0 and r2_score > 0.9

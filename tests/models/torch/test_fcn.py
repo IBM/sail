@@ -11,7 +11,7 @@ import torch
 class TestFCN:
     @pytest.fixture
     def classifier(self, classification_data):
-        from modelCNN import FCN_Classifier
+        from sail.models.torch.fcn import FCN_Classifier
         return FCN_Classifier(in_channels=1, input_size=10, lstm_layers = 8,classes=2)
     
     

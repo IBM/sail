@@ -11,7 +11,7 @@ import torch
 class TestLSTM_FCN:
     @pytest.fixture
     def classifier(self, classification_data):
-        from model import LSTM_FCN_Classifier
+        from sail.models.torch.lstm_fcn import LSTM_FCN_Classifier
         return LSTM_FCN_Classifier(in_channels=1, input_size=10, lstm_layers = 8,classes=2)
     
     

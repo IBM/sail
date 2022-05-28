@@ -15,4 +15,7 @@ jobs:
         with:
           python-version: "3.8"
       - run: pip install ".[all]"
-      - run: pip install pytest
+
+  test:
+    steps:
+      - run: pip install pytest && python -m pytest --tb=native tests

@@ -15,4 +15,5 @@ jobs:
         with:
           python-version: "3.8"
       - run: pip install ".[all]"
+      - run: pip install protobuf==3.20.1
       - run: pip install pytest && python -m pytest --tb=native tests

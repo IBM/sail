@@ -15,9 +15,4 @@ jobs:
         with:
           python-version: "3.8"
       - run: pip install ".[all]"
-
-  test:
-    runs-on: ubuntu-18.04
-    needs: build
-    steps:
       - run: pip install pytest && python -m pytest --tb=native tests

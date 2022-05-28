@@ -1,0 +1,27 @@
+name: SAIL Build and Test
+on: 
+  push:
+  pull_request:
+    branches:
+      - master
+
+jobs:
+  build:
+    runs-on: ubuntu-18.04
+    timeout-minutes: 5
+    steps:
+      - name: checkout sail repo
+        uses: actions/checkout@v3
+
+      - name: install python version 3.8
+        uses: actions/setup-python@v2
+          with:
+            python-version: "3.8"
+
+      - name: install dependencies
+        run: |
+          pip install ".[all]"
+          pip install protobuf==3.20.1
+
+      - name: run unit tests
+        run: pip install pytest && python -m pytest --tb=native tests

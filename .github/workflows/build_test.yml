@@ -18,4 +18,6 @@ jobs:
 
   test:
     steps:
+    runs-on: ubuntu-18.04
+    needs: build
       - run: pip install pytest && python -m pytest --tb=native tests

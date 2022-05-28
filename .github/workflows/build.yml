@@ -18,7 +18,24 @@ jobs:
         with:
           python-version: "3.8"
 
-      - name: install dependencies
+      - name: install sail and its dependencies
+        run: |
+          pip install ".[all]"
+
+  test:
+    runs-on: ubuntu-18.04
+    timeout-minutes: 5
+    needs: build
+    steps:
+      - name: checkout sail repo
+        uses: actions/checkout@v3
+
+      - name: install python version 3.8
+        uses: actions/setup-python@v2
+        with:
+          python-version: "3.8"
+
+      - name: install sail and its dependencies
         run: |
           pip install ".[all]"
           pip install protobuf==3.20.1

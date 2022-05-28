@@ -7,7 +7,7 @@ UNIT TESTING
 class TestInceptionTime:
     @pytest.fixture
     def net(self):
-        from  sail.models.torch.rnn.inceptiontime import InceptionTimeClassifier
+        from  sail.models.torch.inceptiontime import InceptionTimeClassifier
         return InceptionTimeClassifier(lr=0.07)
 
     @pytest.fixture

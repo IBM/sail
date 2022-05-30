@@ -14,6 +14,7 @@ setup(
         "numpy>=1.21.0",
         "scipy>=1.5.2",
         "pandas>=1.3.0",
+        "dill==0.3.5.1",
         "scikit-learn>=0.24.2",
         "scikit-multiflow==0.5.3",
         "matplotlib",
@@ -22,13 +23,13 @@ setup(
         "ipykernel",
     ],
     extras_require={
-        "tensorflow": ["tensorflow==2.8.0", "scikeras==0.6.1"],
+        "tensorflow": ["tensorflow==2.9.1", "scikeras==0.6.1"],
         "pytorch": ["torch==1.10.2", "skorch==0.11.0"],
         "river": ["river==0.10.1"],
         "ray": ["ray==1.11.0"],
         "dev": ["black", "pylint"],
         "all": [
-            "tensorflow==2.8.0",
+            "tensorflow==2.9.1",
             "scikeras==0.6.1",
             "torch==1.10.2",
             "skorch==0.11.0",

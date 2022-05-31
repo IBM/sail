@@ -1,0 +1,43 @@
+name: SAIL CI
+on: 
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  build:
+    runs-on: ubuntu-18.04
+    timeout-minutes: 5
+    steps:
+      - name: Checkout sail repo
+        uses: actions/checkout@v3
+
+      - name: Install python version 3.8
+        uses: actions/setup-python@v3
+        with:
+          python-version: "3.8"
+
+      - name: Install sail and its dependencies
+        run: |
+          pip install ".[all]"
+
+  test:
+    runs-on: ubuntu-18.04
+    timeout-minutes: 5
+    needs: build
+    steps:
+      - name: Checkout sail repo
+        uses: actions/checkout@v3
+
+      - name: Install python version 3.8
+        uses: actions/setup-python@v3
+        with:
+          python-version: "3.8"
+
+      - name: Install sail and its dependencies
+        run: |
+          pip install ".[all]"
+
+      - name: Run tests with pytest
+        run: pip install pytest && python -m pytest --tb=native tests

@@ -120,7 +120,6 @@ class _TCN(nn.Module):
         self.linear.weight.data.normal_(0, 0.01)
 
     def forward(self, x):
-        print(x.shape)
         x = self.tcn(x)
         x = self.gap(x)
         if self.dropout is not None:

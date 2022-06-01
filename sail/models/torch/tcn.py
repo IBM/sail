@@ -145,7 +145,9 @@ class TCNRegressor(NeuralNetRegressor):
         c_in: int,
         c_out: int,
         layers=8 * [25],
+        batch_size=20,
         ks=7,
+        lr=4e-3, #learning_rate
         conv_dropout=0.1,
         fc_dropout=0.1,
         **kwargs
@@ -160,6 +162,8 @@ class TCNRegressor(NeuralNetRegressor):
             module__fc_dropout=fc_dropout,
             train_split=None,
             max_epochs=1,
-            batch_size=20,
+            batch_size=batch_size,
+            optimizer=torch.optim.Adam,
+            optimizer__lr=lr,
             **kwargs
         )

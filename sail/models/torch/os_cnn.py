@@ -206,6 +206,7 @@ class OS_CNN_CLassifier(NeuralNetClassifier):
         paramenter_number_of_layer_list = [8*128, 5*128*256 + 2*256*128],
         device = "cpu",
         few_shot = False,
+        max_epochs = 20,
         **kwargs):
         super(OS_CNN_CLassifier, self).__init__(
             module = _OS_CNN,
@@ -217,7 +218,7 @@ class OS_CNN_CLassifier(NeuralNetClassifier):
             module__paramenter_number_of_layer_list = paramenter_number_of_layer_list,
             module__few_shot = few_shot,
             device = device,
-            max_epochs=20, 
+            max_epochs=max_epochs, 
             batch_size=16,
             criterion = nn.CrossEntropyLoss,
             optimizer = optim.Adam,

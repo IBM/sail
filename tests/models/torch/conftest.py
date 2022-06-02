@@ -3,12 +3,14 @@
 
 import numpy as np
 import pytest
+import tempfile
+import shutil
 from sklearn.datasets import make_classification
 from sklearn.datasets import make_regression
 from sklearn.preprocessing import StandardScaler
 
 
-INFERENCE_METHODS = ['predict', 'predict_proba', 'forward', 'forward_iter']
+INFERENCE_METHODS = ["predict", "predict_proba", "forward", "forward_iter"]
 
 
 ###################
@@ -23,10 +25,9 @@ def seeds_fixed():
     np.random.seed(0)
 
 
-@pytest.fixture(scope='module')
+@pytest.fixture(scope="module")
 def regression_data():
-    X, y = make_regression(
-        1000, 10, n_informative=10, bias=0, random_state=0)
+    X, y = make_regression(1000, 10, n_informative=10, bias=0, random_state=0)
     X, y = X.astype(np.float32), y.astype(np.float32).reshape(-1, 1)
     Xt = StandardScaler().fit_transform(X)
     yt = StandardScaler().fit_transform(y)
@@ -42,3 +43,9 @@ try:
 except ImportError:
     pass
 
+
+@pytest.fixture()
+def create_tmp_dir():
+    dir_path = tempfile.mkdtemp()
+    yield dir_path
+    shutil.rmtree(dir_path)

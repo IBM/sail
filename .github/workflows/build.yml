@@ -38,7 +38,6 @@ jobs:
       - name: Install sail and its dependencies
         run: |
           pip install ".[all]"
-          pip install protobuf==3.20.1
 
       - name: Run tests with pytest
         run: pip install pytest && python -m pytest --tb=native tests

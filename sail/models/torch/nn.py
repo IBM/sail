@@ -2,6 +2,7 @@ import torch
 import torch.nn as nn
 from skorch.regressor import NeuralNetRegressor
 import torch.nn.functional as F
+from sail.models.torch.base import TorchSerializationMixin
 
 
 class NNModel(nn.Module):
@@ -26,7 +27,7 @@ class NNModel(nn.Module):
         return X
 
 
-class NNRegressor(NeuralNetRegressor):
+class NNRegressor(NeuralNetRegressor, TorchSerializationMixin):
     def __init__(self, ni, no, nh, nlayers, module=NNModel, **kwargs):
         super(NNRegressor, self).__init__(
             module=module,

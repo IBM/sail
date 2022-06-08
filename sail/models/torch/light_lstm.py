@@ -1,6 +1,7 @@
 import torch
 import torch.nn as nn
 from skorch.regressor import NeuralNetRegressor
+from sail.models.torch.base import TorchSerializationMixin
 
 
 class lightLSTM(nn.Module):
@@ -18,12 +19,13 @@ class lightLSTM(nn.Module):
         return out, hs
 
 
-class LSTMRegressor(NeuralNetRegressor):
-    def __init__(self, ni , no, nh, nlayers, module=lightLSTM, **kwargs):
+class LSTMRegressor(NeuralNetRegressor, TorchSerializationMixin):
+    def __init__(self, ni, no, nh, nlayers, module=lightLSTM, **kwargs):
         super(LSTMRegressor, self).__init__(
             module=module,
             module__ni=ni,
             module__no=no,
             module__nh=nh,
             module__nlayers=nlayers,
-            **kwargs)
+            **kwargs
+        )

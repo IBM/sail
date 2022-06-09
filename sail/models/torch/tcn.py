@@ -186,15 +186,14 @@ class TCNModel(nn.Module):
 
     def forward(self, x_in):
         x = x_in
-        x = torch.unsqueeze(x, dim=1)
-        # data is of size (batch_size, input_chunk_length, input_size)
+        if x.dim() == 2:
+            x = torch.unsqueeze(x, dim=-1)
+        # data is of size (batch_size, input_size, input_chunk_length)
         batch_size = x.size(0)
-        x = x.transpose(1, 2)
 
         for res_block in self.res_blocks_list:
             x = res_block(x)
 
-        x = x.transpose(1, 2)
         x = x.view(batch_size, self.target_size)
 
         return x

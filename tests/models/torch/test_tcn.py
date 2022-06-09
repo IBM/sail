@@ -11,21 +11,21 @@ class TestTCN:
     def net(self):
         from sail.models.torch.tcn import TCNRegressor
 
-        return TCNRegressor(c_in=10, c_out=1)
+        return TCNRegressor(input_dim=10, output_dim=1)
 
     @pytest.fixture
     def net_partial_fit(self, net, regression_data):
         X, y = regression_data
-        X = X[:,:,np.newaxis]
-        y = y[:,np.newaxis]
+        X = X[:, :, np.newaxis]
+        y = y[:, np.newaxis]
         for _ in range(10):
             net.partial_fit(X, y)
         return net
 
     def test_net_learns(self, net, regression_data):
         X, y = regression_data
-        X = X[:,:,np.newaxis]
-        y = y[:,np.newaxis]
+        X = X[:, :, np.newaxis]
+        y = y[:, np.newaxis]
         for _ in range(3):
             net.partial_fit(X, y)
         train_losses = net.history[:, "train_loss"]
@@ -33,7 +33,7 @@ class TestTCN:
 
     def test_predict_predict_proba(self, net_partial_fit, regression_data):
         X = regression_data[0]
-        X = X[:,:,np.newaxis]
+        X = X[:, :, np.newaxis]
         y_pred = net_partial_fit.predict(X)
 
         # predictions should not be all zeros
@@ -45,6 +45,6 @@ class TestTCN:
 
     def test_score(self, net_partial_fit, regression_data):
         X, y = regression_data
-        X = X[:,:,np.newaxis]
+        X = X[:, :, np.newaxis]
         r2_score = net_partial_fit.score(X, y)
         assert r2_score <= 1.0 and r2_score > 0.9

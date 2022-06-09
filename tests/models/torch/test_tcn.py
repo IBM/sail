@@ -17,7 +17,6 @@ class TestTCN:
     def net_partial_fit(self, net, regression_data):
         X, y = regression_data
         X = X[:, :, np.newaxis]
-        y = y[:, np.newaxis]
         for _ in range(10):
             net.partial_fit(X, y)
         return net
@@ -25,7 +24,6 @@ class TestTCN:
     def test_net_learns(self, net, regression_data):
         X, y = regression_data
         X = X[:, :, np.newaxis]
-        y = y[:, np.newaxis]
         for _ in range(3):
             net.partial_fit(X, y)
         train_losses = net.history[:, "train_loss"]

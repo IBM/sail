@@ -1,135 +1,207 @@
-from __future__ import annotations
-
 from skorch.regressor import NeuralNetRegressor
 
 import torch
-from torch import nn
-from torch.nn.utils.weight_norm import weight_norm
+import torch.nn as nn
+import torch.nn.functional as F
+from torch.nn.utils.weight_norm import weight_norm as wn
 
 
-class _GAP1d(nn.Module):
-    "Global Adaptive Pooling + Flatten"
+class _ResidualBlock(nn.Module):
+    def __init__(
+        self,
+        num_filters: int,
+        kernel_size: int,
+        dilation_base: int,
+        dropout_fn,
+        weight_norm: bool,
+        nr_blocks_below: int,
+        num_layers: int,
+        input_size: int,
+        target_size: int,
+    ):
+        """PyTorch module implementing a residual block module used in `_TCNModule`.
 
-    def __init__(self, output_size: int = 1) -> None:
-        super().__init__()
-        self.gap = nn.AdaptiveAvgPool1d(output_size)
-        self.flatten = nn.Flatten()
+        Parameters
+        ----------
+        num_filters
+            The number of filters in a convolutional layer of the TCN.
+        kernel_size
+            The size of every kernel in a convolutional layer.
+        dilation_base
+            The base of the exponent that will determine the dilation on every level.
+        dropout_fn
+            The dropout function to be applied to every convolutional layer.
+        weight_norm
+            Boolean value indicating whether to use weight normalization.
+        nr_blocks_below
+            The number of residual blocks before the current one.
+        num_layers
+            The number of convolutional layers.
+        input_size
+            The dimensionality of the input time series of the whole network.
+        target_size
+            The dimensionality of the output time series of the whole network.
 
-    def forward(self, x: torch.Tensor) -> torch.Tensor:
-        return self.flatten(self.gap(x))
+        Inputs
+        ------
+        x of shape `(batch_size, in_dimension, input_chunk_length)`
+            Tensor containing the features of the input sequence.
+            in_dimension is equal to `input_size` if this is the first residual block,
+            in all other cases it is equal to `num_filters`.
 
-
-class _Chomp1d(nn.Module):
-    def __init__(self, chomp_size: int) -> None:
-        super(_Chomp1d, self).__init__()
-        self.chomp_size = chomp_size
-
-    def forward(self, x: torch.Tensor) -> torch.Tensor:
-        return x[:, :, : -self.chomp_size].contiguous()
-
-
-class _TemporalBlock(nn.Module):
-    def __init__(self, ni, nf, ks, stride, dilation, padding, dropout=0.0):
-        """Initialises the Temporal Block
-
-        Args:
-            ni (int): number of inputs
-            nf (int): number of outputs
-            ks (int): kernel size
-            stride (int): stride lengths
-            dilation (int): dilation
-            padding (int or str): padding
-            dropout (float, optional): dropout rate. Defaults to 0.0.
+        Outputs
+        -------
+        y of shape `(batch_size, out_dimension, input_chunk_length)`
+            Tensor containing the output sequence of the residual block.
+            out_dimension is equal to `output_size` if this is the last residual block,
+            in all other cases it is equal to `num_filters`.
         """
         super().__init__()
-        self.conv1 = weight_norm(
-            nn.Conv1d(ni, nf, ks, stride=stride, padding=padding, dilation=dilation)
-        )
-        self.chomp1 = _Chomp1d(padding)
-        self.relu1 = nn.ReLU()
-        self.dropout1 = nn.Dropout(dropout)
-        self.conv2 = weight_norm(
-            nn.Conv1d(nf, nf, ks, stride=stride, padding=padding, dilation=dilation)
-        )
-        self.chomp2 = _Chomp1d(padding)
-        self.relu2 = nn.ReLU()
-        self.dropout2 = nn.Dropout(dropout)
-        self.net = nn.Sequential(
-            self.conv1,
-            self.chomp1,
-            self.relu1,
-            self.dropout1,
-            self.conv2,
-            self.chomp2,
-            self.relu2,
-            self.dropout2,
-        )
-        self.downsample = nn.Conv1d(ni, nf, 1) if ni != nf else None
-        self.relu = nn.ReLU()
-        self.init_weights()
 
-    def init_weights(self):
-        self.conv1.weight.data.normal_(0, 0.01)
-        self.conv2.weight.data.normal_(0, 0.01)
-        if self.downsample is not None:
-            self.downsample.weight.data.normal_(0, 0.01)
+        self.dilation_base = dilation_base
+        self.kernel_size = kernel_size
+        self.dropout_fn = dropout_fn
+        self.num_layers = num_layers
+        self.nr_blocks_below = nr_blocks_below
+
+        input_dim = input_size if nr_blocks_below == 0 else num_filters
+        output_dim = target_size if nr_blocks_below == num_layers - 1 else num_filters
+        self.conv1 = nn.Conv1d(
+            input_dim,
+            num_filters,
+            kernel_size,
+            dilation=(dilation_base ** nr_blocks_below),
+        )
+        self.conv2 = nn.Conv1d(
+            num_filters,
+            output_dim,
+            kernel_size,
+            dilation=(dilation_base ** nr_blocks_below),
+        )
+        if weight_norm:
+            self.conv1, self.conv2 = wn(self.conv1), wn(self.conv2)
+
+        if input_dim != output_dim:
+            self.conv3 = nn.Conv1d(input_dim, output_dim, 1)
 
     def forward(self, x):
-        out = self.net(x)
-        res = x if self.downsample is None else self.downsample(x)
-        return self.relu(out + res)
+        residual = x
+
+        left_padding = (self.dilation_base ** self.nr_blocks_below) * (
+            self.kernel_size - 1
+        )
+        x = F.pad(x, (left_padding, 0))
+        x = self.dropout_fn(F.relu(self.conv1(x)))
+
+        x = F.pad(x, (left_padding, 0))
+        x = self.conv2(x)
+        if self.nr_blocks_below < self.num_layers - 1:
+            x = F.relu(x)
+        x = self.dropout_fn(x)
+
+        if self.conv1.in_channels != self.conv2.out_channels:
+            residual = self.conv3(residual)
+        x = x + residual
+
+        return x
 
 
-class _TemporalConvNet(nn.Module):
-    def __init__(self, num_inputs, num_channels, kernel_size=2, dropout=0.2):
-        super(_TemporalConvNet, self).__init__()
-        layers = []
-        num_levels = len(num_channels)
-        for i in range(num_levels):
-            dilation_size = 2 ** i
-            in_channels = num_inputs if i == 0 else num_channels[i - 1]
-            out_channels = num_channels[i]
-            layers += [
-                _TemporalBlock(
-                    in_channels,
-                    out_channels,
-                    kernel_size,
-                    stride=1,
-                    dilation=dilation_size,
-                    padding=(kernel_size - 1) * dilation_size,
-                    dropout=dropout,
-                )
-            ]
+class TCNModel(nn.Module):
+    def __init__(
+        self,
+        input_dim: int,
+        output_dim: int,
+        kernel_size: int,
+        num_filters: int,
+        num_layers: int,
+        dilation_base: int,
+        weight_norm: bool,
+        dropout: float,
+    ):
 
-        self.network = nn.Sequential(*layers)
-
-    def forward(self, x):
-        return self.network(x)
+        """PyTorch module implementing a dilated TCN module used in `TCNModel`.
 
 
-class _TCN(nn.Module):
-    def __init__(self, c_in, c_out, layers, ks, conv_dropout, fc_dropout):
+        Parameters
+        ----------
+        input_size
+            The dimensionality of the input time series.
+        target_size
+            The dimensionality of the output time series.
+        kernel_size
+            The size of every kernel in a convolutional layer.
+        num_filters
+            The number of filters in a convolutional layer of the TCN.
+        num_layers
+            The number of convolutional layers.
+        weight_norm
+            Boolean value indicating whether to use weight normalization.
+        dilation_base
+            The base of the exponent that will determine the dilation on every level.
+        dropout
+            The dropout rate for every convolutional layer.
+        **kwargs
+            all parameters required for :class:`darts.model.forecasting_models.PLForecastingModule` base class.
+
+        Inputs
+        ------
+        x of shape `(batch_size, input_chunk_length, input_size)`
+            Tensor containing the features of the input sequence.
+
+        Outputs
+        -------
+        y of shape `(batch_size, input_chunk_length, target_size)`
+            Tensor containing the predictions of the next 'output_chunk_length' points in the last
+            'output_chunk_length' entries of the tensor. The entries before contain the data points
+            leading up to the first prediction, all in chronological order.
+        """
+
         super().__init__()
-        self.tcn = _TemporalConvNet(c_in, layers, kernel_size=ks, dropout=conv_dropout)
-        self.gap = _GAP1d()
-        self.dropout = nn.Dropout(fc_dropout) if fc_dropout else None
-        self.linear = nn.Linear(layers[-1], c_out)
-        self.init_weights()
 
-    def init_weights(self):
-        self.linear.weight.data.normal_(0, 0.01)
+        # Defining parameters
+        self.input_size = input_dim
+        self.n_filters = num_filters
+        self.kernel_size = kernel_size
+        self.target_size = output_dim
+        self.dilation_base = dilation_base
+        self.dropout = nn.Dropout(p=dropout)
+        self.num_layers = num_layers
 
-    def forward(self, x):
-        x = self.tcn(x)
-        x = self.gap(x)
-        if self.dropout is not None:
-            x = self.dropout(x)
-        return self.linear(x)
+        # Building TCN module
+        self.res_blocks_list = []
+        for i in range(num_layers):
+            res_block = _ResidualBlock(
+                num_filters,
+                kernel_size,
+                dilation_base,
+                self.dropout,
+                weight_norm,
+                i,
+                num_layers,
+                self.input_size,
+                self.target_size,
+            )
+            self.res_blocks_list.append(res_block)
+        self.res_blocks = nn.ModuleList(self.res_blocks_list)
+
+    def forward(self, x_in):
+        x = x_in
+        x = torch.unsqueeze(x, dim=1)
+        # data is of size (batch_size, input_chunk_length, input_size)
+        batch_size = x.size(0)
+        x = x.transpose(1, 2)
+
+        for res_block in self.res_blocks_list:
+            x = res_block(x)
+
+        x = x.transpose(1, 2)
+        x = x.view(batch_size, self.target_size)
+
+        return x
 
 
 class TCNRegressor(NeuralNetRegressor):
     """Basic TCN model.
-
     Args:
         c_in (int): number of input channels
         c_out (int): number of output channels
@@ -142,28 +214,28 @@ class TCNRegressor(NeuralNetRegressor):
 
     def __init__(
         self,
-        c_in: int,
-        c_out: int,
-        layers=8 * [25],
-        batch_size=20,
-        ks=7,
-        lr=4e-3, #learning_rate
-        conv_dropout=0.1,
-        fc_dropout=0.1,
+        input_dim: int,
+        output_dim: int,
+        kernel_size: int = 3,
+        num_filters: int = 3,
+        num_layers: int = 3,
+        dilation_base: int = 2,
+        weight_norm: bool = False,
+        dropout: float = 0.2,
         **kwargs
     ):
         super(TCNRegressor, self).__init__(
-            module=_TCN,
-            module__c_in=c_in,
-            module__c_out=c_out,
-            module__layers=layers,
-            module__ks=ks,
-            module__conv_dropout=conv_dropout,
-            module__fc_dropout=fc_dropout,
+            module=TCNModel,
+            module__input_dim=input_dim,
+            module__output_dim=output_dim,
+            module__kernel_size=kernel_size,
+            module__num_filters=num_filters,
+            module__num_layers=num_layers,
+            module__dilation_base=dilation_base,
+            module__weight_norm=weight_norm,
+            module__dropout=dropout,
             train_split=None,
             max_epochs=1,
-            batch_size=batch_size,
-            optimizer=torch.optim.Adam,
-            optimizer__lr=lr,
+            batch_size=20,
             **kwargs
         )

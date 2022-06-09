@@ -1,3 +1,9 @@
+# PyTorch implementation for TCN
+# This implementation is based on https://github.com/unit8co/darts/blob/master/darts/models/forecasting/tcn_model.py
+# Paper https://arxiv.org/abs/1803.01271
+# Paper repository: https://github.com/locuslab/TCN
+# By Kasper Hjort Berthelsen and Mads Ehrhorn
+
 from skorch.regressor import NeuralNetRegressor
 
 import torch
@@ -23,7 +29,7 @@ class _ResidualBlock(nn.Module):
         This implementation is based on https://github.com/unit8co/darts/blob/master/darts/models/forecasting/tcn_model.py
 
         Args:
-            num_filters (int): The number of filters in a convolutional layer of the TCN.
+        num_filters (int): The number of filters in a convolutional layer of the TCN.
         kernel_size (int): The size of every kernel in a convolutional layer.
         dilation_base (int): The base of the exponent that will determine the dilation on every level.
         dropout_fn (nn.Dropout): The dropout function to be applied to every convolutional layer.

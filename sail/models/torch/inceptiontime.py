@@ -195,7 +195,7 @@ wrapper scorch class
 class InceptionTimeClassifier(NeuralNetClassifier):
   def __init__(self, num_blocks=2, in_channels=1, out_channels=2,
                            bottleneck_channels=2, kernel_sizes=41, use_residuals=True,
-                           num_pred_classes=1, learning_rate=0.05, batch_size=1000, criterion = nn.BCEWithLogitsLoss, max_epochs = 50):
+                           num_pred_classes=1, learning_rate=0.05, batch_size=1000, criterion = nn.BCEWithLogitsLoss, max_epochs = 50, device='cpu'):
     
     self.inception_model = _InceptionModel(num_blocks=2, in_channels=1, out_channels=2,
                            bottleneck_channels=2, kernel_sizes=41, use_residuals=True,
@@ -209,5 +209,5 @@ class InceptionTimeClassifier(NeuralNetClassifier):
             criterion=criterion ,
             # Shuffle training data on each epoch
             iterator_train__shuffle=False,
-            device='cuda',
+            device=device,
             )

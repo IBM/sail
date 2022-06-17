@@ -3,12 +3,13 @@ Keras wrapper for The Online Sequential Extreme Learning Machine (OSELM).
 """
 
 import tensorflow as tf
+import tensorflow.keras as keras
 from scikeras.wrappers import KerasRegressor
-from .base import KerasBaseModel
 from tensorflow.python.keras.engine import data_adapter
+from sail.models.keras.base import KerasSerializationMixin
 
 
-class _Model(KerasBaseModel):
+class _Model(keras.Model):
     def __init__(
         self,
         num_hidden_nodes: int = 100,
@@ -114,10 +115,12 @@ class _Model(KerasBaseModel):
         predictions = self(features, training=False)
 
         # compute loss value
-        self.compute_loss(targets, predictions)
+        if self.compiled_loss:
+            self.compiled_loss(targets, predictions)
 
-        # update metrics
-        self.update_metrics(targets, predictions)
+        # Update the metrics.
+        if self.compiled_metrics:
+            self.compiled_metrics.update_state(targets, predictions)
 
         return {m.name: m.result() for m in self.metrics}
 
@@ -158,15 +161,17 @@ class _Model(KerasBaseModel):
         predictions = tf.matmul(H, self.__beta)
 
         # compute loss value
-        self.compute_loss(targets, predictions)
+        if self.compiled_loss:
+            self.compiled_loss(targets, predictions)
 
-        # update metrics
-        self.update_metrics(targets, predictions)
+        # Update the metrics.
+        if self.compiled_metrics:
+            self.compiled_metrics.update_state(targets, predictions)
 
         return {m.name: m.result() for m in self.metrics}
 
 
-class OSELM(KerasRegressor):
+class OSELM(KerasRegressor, KerasSerializationMixin):
     """
     Keras wrapper for The Online Sequential Extreme Learning Machine (OSELM).
 
@@ -233,7 +238,8 @@ class OSELM(KerasRegressor):
             verbose=verbose,
             **kwargs
         )
-    
-    def _ensure_compiled_model(self)-> None:
+        self.prediction_window_size = prediction_window_size
+
+    def _ensure_compiled_model(self) -> None:
         super()._ensure_compiled_model()
-        self.model_.outputs = [1]*self.n_outputs_
+        self.model_.outputs = [1] * self.prediction_window_size

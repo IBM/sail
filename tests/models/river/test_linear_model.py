@@ -5,35 +5,15 @@ from sklearn.model_selection import train_test_split
 
 from sail.utils.stats import nmse
 from sail.models.river.linear_model import LinearRegression, LogisticRegression
-from sail.models.river.preprocessing import StandardScaler
 
 
 class TestLinearModel:
-    @pytest.fixture
-    def regression_dataset(self):
-        X, y = datasets.load_diabetes(return_X_y=True)
-        return X, y
-
-    @pytest.fixture
-    def classification_dataset(self):
-        X, y = datasets.load_breast_cancer(return_X_y=True)
-        return X, y
-
-    @pytest.fixture
-    def linear_regression(self):
-        return LinearRegression()
-
-    @pytest.fixture
-    def logistic_regression(self):
-        return LogisticRegression()
-
-    def test_linear_regression_nmse(self, regression_dataset, linear_regression):
+    def test_linear_regression_nmse(self, regression_dataset):
         X, y = regression_dataset
-        X = StandardScaler().fit_transform(X)
         X_train, X_test, Y_train, Y_test = train_test_split(
             X, y, train_size=0.7, random_state=99
         )
-        model = linear_regression
+        model = LinearRegression()
         for i in range(X_train.shape[0]):
             model.partial_fit(
                 X_train[i].reshape(1, -1),
@@ -49,13 +29,12 @@ class TestLinearModel:
         print("nmse_val: ", nmse_val)
         assert nmse_val <= 60
 
-    def test_linear_regression_score(self, regression_dataset, linear_regression):
+    def test_linear_regression_score(self, regression_dataset):
         X, y = regression_dataset
-        X = StandardScaler().fit_transform(X)
         X_train, X_test, Y_train, Y_test = train_test_split(
             X, y, train_size=0.7, random_state=99
         )
-        model = linear_regression
+        model = LinearRegression()
         for i in range(X_train.shape[0]):
             model.partial_fit(
                 X_train[i].reshape(1, -1),
@@ -67,16 +46,14 @@ class TestLinearModel:
         Y_test_preds = model.predict(X_test)
         r2_score_val = r2_score(Y_test, Y_test_preds)
         print("r2_score_val: ", r2_score_val)
-        assert r2_score_val >= 0.38
+        assert r2_score_val >= 0.37
 
-    def test_logistic_regression_accuracy(
-        self, classification_dataset, logistic_regression
-    ):
+    def test_logistic_regression_accuracy(self, classification_dataset):
         X, y = classification_dataset
         X_train, X_test, Y_train, Y_test = train_test_split(
             X, y, train_size=0.7, random_state=99
         )
-        model = logistic_regression
+        model = LogisticRegression()
         for i in range(X_train.shape[0]):
             model.partial_fit(
                 X_train[i].reshape(1, -1),
@@ -91,4 +68,4 @@ class TestLinearModel:
 
         accuracy = model.score(X_test, Y_test)
         print("Accuracy: ", accuracy)
-        assert accuracy >= 0.85
+        assert accuracy >= 0.95

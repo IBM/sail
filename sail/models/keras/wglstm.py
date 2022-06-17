@@ -23,6 +23,7 @@ from sail.visualisation.ts_plot import plot_series
 from scikeras.wrappers import KerasRegressor
 from sail.utils.stats import nmse
 from sail.visualisation.ts_plot import plot_series
+from sail.models.keras.base import KerasSerializationMixin
 
 
 class _Model(Sequential):
@@ -294,7 +295,7 @@ class _Model(Sequential):
         return tmpw
 
 
-class WGLSTM(KerasRegressor):
+class WGLSTM(KerasRegressor, KerasSerializationMixin):
     """
     Keras wrapper for Weighted Gradient learning based LSTM (WGLSTM)
     neural network in online learning of time series.

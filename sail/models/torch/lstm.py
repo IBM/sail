@@ -1,6 +1,7 @@
 import torch
 import torch.nn as nn
 from skorch.regressor import NeuralNetRegressor
+from sail.models.torch.base import TorchSerializationMixin
 
 
 class LSTMModel(nn.Module):
@@ -13,12 +14,14 @@ class LSTMModel(nn.Module):
         self.nlayers = nlayers
 
         self.lstms = nn.ModuleList(
-            [nn.LSTMCell(self.ni, self.nh)] + [nn.LSTMCell(self.nh, self.nh) for i in range(nlayers - 1)])
+            [nn.LSTMCell(self.ni, self.nh)]
+            + [nn.LSTMCell(self.nh, self.nh) for i in range(nlayers - 1)]
+        )
 
         self.out = nn.Linear(self.nh, self.no)
         self.do = nn.Dropout(p=0.2)
         self.actfn = nn.Tanh()
-        self.device = torch.device('cpu')
+        self.device = torch.device("cpu")
         self.dtype = torch.float
 
     # description of the whole block
@@ -43,16 +46,17 @@ class LSTMModel(nn.Module):
 
 class ContextlessMSE(torch.nn.MSELoss):
     def forward(self, y_pred, y_true):
-        y, (h, c) = y_pred # extract prediction and context information
+        y, (h, c) = y_pred  # extract prediction and context information
         return super().forward(y, y_true)
 
 
-class LSTMRegressor(NeuralNetRegressor):
-    def __init__(self, ni , no, nh, nlayers, module=LSTMModel, **kwargs):
+class LSTMRegressor(NeuralNetRegressor, TorchSerializationMixin):
+    def __init__(self, ni, no, nh, nlayers, module=LSTMModel, **kwargs):
         super(LSTMRegressor, self).__init__(
             module=module,
             module__ni=ni,
             module__no=no,
             module__nh=nh,
             module__nlayers=nlayers,
-            **kwargs)
+            **kwargs
+        )

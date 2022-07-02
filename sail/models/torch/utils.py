@@ -7,7 +7,7 @@ import numpy as np
 import torch
 import torch.nn.functional as F
 from torch.utils.data import DataLoader
-from src.data import *
+from sail.models.torch.data import Data
 
 def download_datasets(datasets):
     """
@@ -34,6 +34,7 @@ def data_dictionary(datasets):
     """
     dataset_dict = {}
     pbar = tqdm(datasets)
+    print(pbar)
     for dataset in pbar:
         pbar.set_description('Processing {}'.format(dataset))
         train_set, test_set = Data(dataset,False),Data(dataset,True)

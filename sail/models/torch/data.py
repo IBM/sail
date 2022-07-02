@@ -8,7 +8,7 @@ import torch
 from torch.utils.data import Dataset
 
 import os
-curdir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+curdir = os.path.dirname(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))))
 
 class Data(Dataset):
     """
@@ -16,7 +16,7 @@ class Data(Dataset):
     """
     def __init__(self,dataset,testing):
         train_data = pd.DataFrame(
-            loadarff(curdir + '/data/{}_TRAIN.arff'.format(dataset))[0])
+            loadarff(curdir + '/examples/datasets/{}_TRAIN.arff'.format(dataset))[0])
         dtypes = {i:np.float32 for i in train_data.columns[:-1]}
         dtypes.update({train_data.columns[-1]: np.int})
         train_data = train_data.astype(dtypes)
@@ -29,7 +29,7 @@ class Data(Dataset):
         print("Current working directory1: {0}".format(os.getcwd()))
         if testing:
             test_data  = pd.DataFrame(
-                loadarff(curdir + '/data/{}_TEST.arff'.format(dataset))[0])
+                loadarff(curdir + '/examples/datasets/{}_TEST.arff'.format(dataset))[0])
             dtypes = {i:np.float32 for i in test_data.columns[:-1]}
             dtypes.update({test_data.columns[-1]: np.int})
             test_data  = test_data.astype(dtypes)

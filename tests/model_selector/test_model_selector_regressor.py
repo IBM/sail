@@ -1,12 +1,12 @@
 import unittest
 import warnings
-from sklearn.datasets import load_boston
 from sklearn.model_selection import train_test_split
 import pandas as pd
 from river import stream
 from river import preprocessing, linear_model, optim
 import time
 import ray
+import numpy as np
 from sail.model_selector.holdout_best_model import HoldoutBestModelSelector
 from sklearn.metrics import r2_score
 from sail.models.native.ielm import IELM
@@ -28,10 +28,10 @@ class TestHoldoutBestRegressor(unittest.TestCase):
         ray.shutdown()
 
     def test_hbr(self):
-        boston = load_boston()
-        boston_data, boston_target = boston.data, boston.target
+        boston = pd.read_csv("http://lib.stat.cmu.edu/datasets/boston", sep="\s+", skiprows=22, header=None)
+        boston_data, boston_target = np.hstack([boston.values[::2, :], boston.values[1::2, :2]]), boston.values[1::2, 2]
 
-        df_X = pd.DataFrame(boston_data, columns=boston.feature_names)
+        df_X = pd.DataFrame(boston_data, columns=range(0,13))
         df_y = pd.Series(boston_target)
 
         df_X = df_X.iloc[:10]

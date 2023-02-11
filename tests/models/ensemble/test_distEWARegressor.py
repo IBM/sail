@@ -4,7 +4,6 @@ from skmultiflow.data.hyper_plane_generator import HyperplaneGenerator
 from sail.models.ensemble.distEWARegressor import DistEWARegressor
 import numpy as np
 from array import array
-import ray
 import warnings
 
 
@@ -14,14 +13,6 @@ class TestDistEWARegressor(unittest.TestCase):
 
     def tearDown(self):
         warnings.simplefilter("default", ResourceWarning)
-
-    @classmethod
-    def setUpClass(cls):
-        ray.init(local_mode=True)
-
-    @classmethod
-    def tearDownClass(cls):
-        ray.shutdown()
 
     def test_ewar(self):
         stream = HyperplaneGenerator(random_state=1)

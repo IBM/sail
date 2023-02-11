@@ -20,6 +20,9 @@ jobs:
         run: |
           pip install ".[all]"
 
+      - name: Install scikit-multiflow
+        run: pip install scikit-multiflow==0.5.3
+
   test:
     runs-on: ubuntu-20.04
     timeout-minutes: 5
@@ -36,6 +39,9 @@ jobs:
       - name: Install sail and its dependencies
         run: |
           pip install ".[all]"
+
+      - name: Install scikit-multiflow
+        run: pip install scikit-multiflow==0.5.3
 
       - name: Run tests with pytest
         run: pip install pytest && python -m pytest --tb=native tests

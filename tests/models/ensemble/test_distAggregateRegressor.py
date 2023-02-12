@@ -4,6 +4,7 @@ from skmultiflow.data.hyper_plane_generator import HyperplaneGenerator
 from sail.models.ensemble.distAggregateRegressor import DistAggregateRegressor
 import numpy as np
 from array import array
+import ray
 import warnings
 
 
@@ -13,6 +14,14 @@ class TestDistAggregateRegressor(unittest.TestCase):
 
     def tearDown(self):
         warnings.simplefilter("default", ResourceWarning)
+
+    @classmethod
+    def setUpClass(cls):
+        ray.init(local_mode=True)
+
+    @classmethod
+    def tearDownClass(cls):
+        ray.shutdown()
 
     def test_dar(self):
         stream = HyperplaneGenerator(random_state=1)

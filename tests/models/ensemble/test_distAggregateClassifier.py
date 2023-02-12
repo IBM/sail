@@ -1,8 +1,11 @@
 import unittest
 from river import linear_model, optim
-from sail.models.ensemble.distAggregateClassifier import DistAggregateClassifier
+from sail.models.ensemble.distAggregateClassifier import (
+    DistAggregateClassifier,
+)
 import numpy as np
 from array import array
+import ray
 from skmultiflow.data import SEAGenerator
 import warnings
 
@@ -13,6 +16,14 @@ class TestDistAggregateClassifier(unittest.TestCase):
 
     def tearDown(self):
         warnings.simplefilter("default", ResourceWarning)
+
+    @classmethod
+    def setUpClass(cls):
+        ray.init(local_mode=True)
+
+    @classmethod
+    def tearDownClass(cls):
+        ray.shutdown()
 
     def test_dac(self):
         stream = SEAGenerator(random_state=1)

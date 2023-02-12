@@ -1,17 +1,24 @@
-import river.neighbors.knn_adwin as knn_adwin
-import river.neighbors.knn_classifier as knn_classifier
-import river.neighbors.knn_regressor as knn_regressor
-import river.neighbors.sam_knn as sam_knn
+import typing
+from river import neighbors
 from river.compat import River2SKLClassifier, River2SKLRegressor
 
-__all__ = ["KNNADWINClassifier", "KNNClassifier", "KNNRegressor", "SAMKNNClassifier"]
+__all__ = ["NearestNeighbors", "KNNClassifier", "KNNRegressor"]
 
 
-class KNNADWINClassifier(River2SKLClassifier):
-    def __init__(self, n_neighbors=5, window_size=1000, leaf_size=30, p=2):
-        super(KNNADWINClassifier, self).__init__(
-            river_estimator=knn_adwin.KNNADWINClassifier(
-                n_neighbors, window_size, leaf_size, p
+class NearestNeighbors(River2SKLClassifier):
+    def __init__(
+        self,
+        window_size: int,
+        min_distance_keep: float,
+        distance_func: typing.Union[
+            neighbors.base.DistanceFunc, neighbors.base.FunctionWrapper
+        ],
+    ):
+        super(NearestNeighbors, self).__init__(
+            river_estimator=neighbors.NearestNeighbors(
+                window_size,
+                min_distance_keep,
+                distance_func,
             )
         )
 
@@ -27,7 +34,7 @@ class KNNClassifier(River2SKLClassifier):
         **kwargs
     ):
         super(KNNClassifier, self).__init__(
-            river_estimator=knn_classifier.KNNClassifier(
+            river_estimator=neighbors.KNNClassifier(
                 n_neighbors, window_size, leaf_size, p, weighted, **kwargs
             )
         )
@@ -44,31 +51,12 @@ class KNNRegressor(River2SKLRegressor):
         **kwargs
     ):
         super(KNNRegressor, self).__init__(
-            river_estimator=knn_regressor.KNNRegressor(
-                n_neighbors, window_size, leaf_size, p, aggregation_method, **kwargs
-            )
-        )
-
-
-class SAMKNNClassifier(River2SKLClassifier):
-    def __init__(
-        self,
-        n_neighbors: int = 5,
-        distance_weighting=True,
-        window_size: int = 5000,
-        ltm_size: float = 0.4,
-        min_stm_size: int = 50,
-        stm_aprox_adaption=True,
-        use_ltm=True,
-    ):
-        super(SAMKNNClassifier, self).__init__(
-            river_estimator=sam_knn.SAMKNNClassifier(
+            river_estimator=neighbors.KNNRegressor(
                 n_neighbors,
-                distance_weighting,
                 window_size,
-                ltm_size,
-                min_stm_size,
-                stm_aprox_adaption,
-                use_ltm,
+                leaf_size,
+                p,
+                aggregation_method,
+                **kwargs
             )
         )

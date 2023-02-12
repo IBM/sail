@@ -32,10 +32,10 @@ Sail is intended to work with **Python 3.10 and above**. You can install the lat
 ```sh
 git clone https://github.com/IBM/sail.git
 cd sail
-pip install -e ".[MODULE_NAME]"
+pip install -e ".[OPTION]"
 ```
 
-Supported `MODULE_NAME` include:
+Supported `OPTION` include:
 
 - tensorflow
 - pytorch

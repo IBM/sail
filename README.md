@@ -1,5 +1,7 @@
 # SAIL
 
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT) ![main branch](https://github.com/IBM/sail/actions/workflows/build.yml/badge.svg?branch=main)
+
 The library is for experimenting with streaming processing engines (SPEs) and incremental machine learning (IML) models. The main features of Sail are:
 
 - Common interface for all incremental models available in libraries like Scikit-Learn, Pytorch, Keras and River.

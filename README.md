@@ -23,5 +23,30 @@ Sail leverages the existing machine learning libraries like River, sklearn etc a
 
 Sail could have been parallelized using Spark as well. However, to keep the streaming processing engines and machine learning tasks independent, Ray was preferred as the data can then be handled using Pandas, Numpy etc efficiently. This flexibility further allows using other SPEs like Flink or Storm without updating the parallelization framework for IML models.
 
+# 🛠 Installation
+
+Sail is intended to work with **Python 3.10 and above**. You can install the latest version from GitHub as so:
+
+```sh
+git clone https://github.com/IBM/sail.git
+cd sail
+pip install -e ".[MODULE_NAME]"
+```
+
+Supported `MODULE_NAME` include:
+
+- tensorflow
+- pytorch
+- river
+- ray
+- all
+
+Sail has an additional dependency on Scikit-Multiflow which can be installed as follows:
+
+```sh
+pip install scikit-multiflow==0.5.3
+```
+
 # Acknowledgment
+
 This project has received funding from the European Union’s Horizon 2020 research and innovation programme under grant agreement No 957345 for MORE project.

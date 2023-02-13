@@ -2,8 +2,8 @@ import typing
 from river.drift import ADWIN
 from river import base, metrics
 from river.tree.splitter import Splitter
-from river.compat import River2SKLRegressor, River2SKLClassifier
-from river.forest import ARFClassifier, ARFRegressor
+from sail.models.river.base import BaseRiverClassifier, BaseRiverRegressor
+import river.ensemble.adaptive_random_forest as adaptive_random_forest
 
 
 __all__ = [
@@ -12,27 +12,32 @@ __all__ = [
 ]
 
 
-class AdaptiveRandomForestClassifier(River2SKLClassifier):
+class AdaptiveRandomForestClassifier(BaseRiverClassifier):
     def __init__(
         self,
         n_models: int = 10,
         max_features: typing.Union[bool, str, int] = "sqrt",
         lambda_value: int = 6,
-        metric: metrics.MultiClassMetric = metrics.Accuracy(),
+        metric: metrics.base.MultiClassMetric = metrics.Accuracy(),
         disable_weighted_vote=False,
-        drift_detector: typing.Union[base.DriftDetector, None] = ADWIN(delta=0.001),
-        warning_detector: typing.Union[base.DriftDetector, None] = ADWIN(delta=0.01),
+        drift_detector: typing.Union[base.DriftDetector, None] = ADWIN(
+            delta=0.001
+        ),
+        warning_detector: typing.Union[base.DriftDetector, None] = ADWIN(
+            delta=0.01
+        ),
+        # Tree parameters
         grace_period: int = 50,
         max_depth: int = None,
         split_criterion: str = "info_gain",
-        split_confidence: float = 0.01,
-        tie_threshold: float = 0.05,
+        delta: float = 0.01,
+        tau: float = 0.05,
         leaf_prediction: str = "nba",
         nb_threshold: int = 0,
         nominal_attributes: list = None,
         splitter: Splitter = None,
         binary_split: bool = False,
-        max_size: int = 32,
+        max_size: float = 100.0,
         memory_estimate_period: int = 2_000_000,
         stop_mem_management: bool = False,
         remove_poor_attrs: bool = False,
@@ -40,7 +45,7 @@ class AdaptiveRandomForestClassifier(River2SKLClassifier):
         seed: int = None,
     ):
         super(AdaptiveRandomForestClassifier, self).__init__(
-            river_estimator=ARFClassifier(
+            river_estimator=adaptive_random_forest.AdaptiveRandomForestClassifier(
                 n_models,
                 max_features,
                 lambda_value,
@@ -51,8 +56,8 @@ class AdaptiveRandomForestClassifier(River2SKLClassifier):
                 grace_period,
                 max_depth,
                 split_criterion,
-                split_confidence,
-                tie_threshold,
+                delta,
+                tau,
                 leaf_prediction,
                 nb_threshold,
                 nominal_attributes,
@@ -68,29 +73,30 @@ class AdaptiveRandomForestClassifier(River2SKLClassifier):
         )
 
 
-class AdaptiveRandomForestRegressor(River2SKLRegressor):
+class AdaptiveRandomForestRegressor(BaseRiverRegressor):
     def __init__(
         self,
         n_models: int = 10,
         max_features="sqrt",
         aggregation_method: str = "median",
         lambda_value: int = 6,
-        metric: metrics.RegressionMetric = metrics.MSE(),
+        metric: metrics.base.RegressionMetric = metrics.MSE(),
         disable_weighted_vote=True,
         drift_detector: base.DriftDetector = ADWIN(0.001),
         warning_detector: base.DriftDetector = ADWIN(0.01),
+        # Tree parameters
         grace_period: int = 50,
         max_depth: int = None,
-        split_confidence: float = 0.01,
-        tie_threshold: float = 0.05,
-        leaf_prediction: str = "model",
+        delta: float = 0.01,
+        tau: float = 0.05,
+        leaf_prediction: str = "adaptive",
         leaf_model: base.Regressor = None,
         model_selector_decay: float = 0.95,
         nominal_attributes: list = None,
         splitter: Splitter = None,
         min_samples_split: int = 5,
         binary_split: bool = False,
-        max_size: int = 500,
+        max_size: float = 500.0,
         memory_estimate_period: int = 2_000_000,
         stop_mem_management: bool = False,
         remove_poor_attrs: bool = False,
@@ -98,7 +104,7 @@ class AdaptiveRandomForestRegressor(River2SKLRegressor):
         seed: int = None,
     ):
         super(AdaptiveRandomForestRegressor, self).__init__(
-            river_estimator=ARFRegressor(
+            river_estimator=adaptive_random_forest.AdaptiveRandomForestRegressor(
                 n_models,
                 max_features,
                 aggregation_method,
@@ -109,8 +115,8 @@ class AdaptiveRandomForestRegressor(River2SKLRegressor):
                 warning_detector,
                 grace_period,
                 max_depth,
-                split_confidence,
-                tie_threshold,
+                delta,
+                tau,
                 leaf_prediction,
                 leaf_model,
                 model_selector_decay,

@@ -12,11 +12,11 @@ jobs:
         uses: actions/checkout@v3
 
       - name: Install python version 3.10
-        uses: actions/setup-python@v3
+        uses: actions/setup-python@v4
         with:
           python-version: "3.10.*"
 
-      - name: Install sail and its dependencies
+      - name: Install Sail and its dependencies
         run: |
           pip install ".[all]"
 
@@ -32,9 +32,10 @@ jobs:
         uses: actions/checkout@v3
 
       - name: Install python version 3.10
-        uses: actions/setup-python@v3
+        uses: actions/setup-python@v4
         with:
           python-version: "3.10.*"
+          cache: 'pip'
 
       - name: Install sail and its dependencies
         run: |

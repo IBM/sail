@@ -1,0 +1,49 @@
+[build-system]
+requires = [
+    "setuptools",
+]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "sail"
+description = "Python package for streaming data and incremental learning"
+dynamic = [
+    "version",
+    "readme",
+]
+authors = [
+    { name = "Seshu Tirupathi", email = "seshutir@ie.ibm.com" },
+    { name = "Dhaval Salwala", email = "dhaval.vinodbhai.salwala@ibm.com" },
+]
+requires-python = ">=3.8"
+license = { text = "MIT" }
+classifiers = [
+    "Development Status :: 4 - Beta",
+    "Intended Audience :: Developers",
+    "Intended Audience :: Science/Research",
+    "Topic :: Software Development :: Libraries :: Python Modules",
+    "License :: OSI Approved :: MIT License",
+    "Programming Language :: Python",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.7",
+    "Programming Language :: Python :: 3.8",
+    "Programming Language :: Python :: 3.9",
+    "Programming Language :: Python :: 3.10",
+]
+
+[tool.setuptools.dynamic]
+version = { attr = "sail.__version__" }
+readme = { file = [
+    "README.md",
+], content-type = "text/markdown" }
+
+[tool.setuptools.packages.find]
+where = [
+    "src",
+]
+
+[tool.setuptools]
+zip-safe = false
+
+[project.urls]
+repository = "https://github.com/IBM/sail"

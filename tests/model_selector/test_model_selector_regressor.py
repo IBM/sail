@@ -1,10 +1,7 @@
 import time
-import unittest
-import warnings
 
 import numpy as np
 import pandas as pd
-import ray
 from river import linear_model, optim, preprocessing, stream
 from sklearn.metrics import r2_score
 from sklearn.model_selection import train_test_split
@@ -14,20 +11,6 @@ from sail.models.native.ielm import IELM
 
 
 class TestHoldoutBestRegressor:
-    # def setUp(self):
-    #     warnings.simplefilter("ignore", ResourceWarning)
-
-    # def tearDown(self):
-    #     warnings.simplefilter("default", ResourceWarning)
-
-    # @classmethod
-    # def setUpClass(cls):
-    #     ray.init()
-
-    # @classmethod
-    # def tearDownClass(cls):
-    #     ray.shutdown()
-
     def test_hbr(self, ray_setup):
         boston = pd.read_csv(
             "http://lib.stat.cmu.edu/datasets/boston",

@@ -1,31 +1,16 @@
-import unittest
+from array import array
+
+import numpy as np
 from river import linear_model, optim
+from skmultiflow.data import SEAGenerator
+
 from sail.models.ensemble.distAggregateClassifier import (
     DistAggregateClassifier,
 )
-import numpy as np
-from array import array
-import ray
-from skmultiflow.data import SEAGenerator
-import warnings
 
 
-class TestDistAggregateClassifier(unittest.TestCase):
-    def setUp(self):
-        warnings.simplefilter("ignore", ResourceWarning)
-
-    def tearDown(self):
-        warnings.simplefilter("default", ResourceWarning)
-
-    @classmethod
-    def setUpClass(cls):
-        ray.init(local_mode=True)
-
-    @classmethod
-    def tearDownClass(cls):
-        ray.shutdown()
-
-    def test_dac(self):
+class TestDistAggregateClassifier:
+    def test_dac(self, ray_setup):
         stream = SEAGenerator(random_state=1)
 
         optimizers = [optim.SGD(0.01), optim.RMSProp(), optim.AdaGrad()]
@@ -86,6 +71,4 @@ class TestDistAggregateClassifier(unittest.TestCase):
         assert np.all(y_pred == expected_predictions)
         assert type(learner.predict(X)) == np.ndarray
 
-
-if __name__ == "__main__":
-    unittest.main()
+        print("Action: ", ray_setup)

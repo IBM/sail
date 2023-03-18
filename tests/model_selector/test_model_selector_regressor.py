@@ -1,37 +1,46 @@
+import time
 import unittest
 import warnings
-from sklearn.model_selection import train_test_split
-import pandas as pd
-from river import stream
-from river import preprocessing, linear_model, optim
-import time
-import ray
+
 import numpy as np
-from sail.model_selector.holdout_best_model import HoldoutBestModelSelector
+import pandas as pd
+import ray
+from river import linear_model, optim, preprocessing, stream
 from sklearn.metrics import r2_score
+from sklearn.model_selection import train_test_split
+
+from sail.model_selector.holdout_best_model import HoldoutBestModelSelector
 from sail.models.native.ielm import IELM
 
 
-class TestHoldoutBestRegressor(unittest.TestCase):
-    def setUp(self):
-        warnings.simplefilter("ignore", ResourceWarning)
+class TestHoldoutBestRegressor:
+    # def setUp(self):
+    #     warnings.simplefilter("ignore", ResourceWarning)
 
-    def tearDown(self):
-        warnings.simplefilter("default", ResourceWarning)
+    # def tearDown(self):
+    #     warnings.simplefilter("default", ResourceWarning)
 
-    @classmethod
-    def setUpClass(cls):
-        ray.init(local_mode=True)
+    # @classmethod
+    # def setUpClass(cls):
+    #     ray.init()
 
-    @classmethod
-    def tearDownClass(cls):
-        ray.shutdown()
+    # @classmethod
+    # def tearDownClass(cls):
+    #     ray.shutdown()
 
-    def test_hbr(self):
-        boston = pd.read_csv("http://lib.stat.cmu.edu/datasets/boston", sep="\s+", skiprows=22, header=None)
-        boston_data, boston_target = np.hstack([boston.values[::2, :], boston.values[1::2, :2]]), boston.values[1::2, 2]
+    def test_hbr(self, ray_setup):
+        boston = pd.read_csv(
+            "http://lib.stat.cmu.edu/datasets/boston",
+            sep="\\s+",
+            skiprows=22,
+            header=None,
+        )
+        boston_data, boston_target = (
+            np.hstack([boston.values[::2, :], boston.values[1::2, :2]]),
+            boston.values[1::2, 2],
+        )
 
-        df_X = pd.DataFrame(boston_data, columns=range(0,13))
+        df_X = pd.DataFrame(boston_data, columns=range(0, 13))
         df_y = pd.Series(boston_target)
 
         df_X = df_X.iloc[:10]
@@ -57,7 +66,8 @@ class TestHoldoutBestRegressor(unittest.TestCase):
         ielm_model = IELM(numInputNodes=13, numOutputNodes=1, numHiddenNodes=7)
 
         hedge = HoldoutBestModelSelector(
-            estimators=[linear_model.LinearRegression(), ielm_model], metrics=r2_score
+            estimators=[linear_model.LinearRegression(), ielm_model],
+            metrics=r2_score,
         )
 
         start = time.time()
@@ -72,7 +82,8 @@ class TestHoldoutBestRegressor(unittest.TestCase):
 
         # print("best model ", type(hedge.get_best_model()).__name__)
         print(
-            "best model ", (hedge.get_best_model()).river_estimator.__class__.__name__
+            "best model ",
+            (hedge.get_best_model()).river_estimator.__class__.__name__,
         )
         # print("best model ", hedge.get_best_model_index(x,yi))
         assert type(hedge.get_best_model()).__name__ == "River2SKLRegressor"
@@ -82,6 +93,4 @@ class TestHoldoutBestRegressor(unittest.TestCase):
         # assert np.allclose(y_pred, expected_predictions)
         # assert type(learner.predict(X)) == np.ndarray
 
-
-if __name__ == "__main__":
-    unittest.main()
+        print("Action: ", ray_setup)

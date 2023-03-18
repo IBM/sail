@@ -4,10 +4,29 @@ on:
     branches: [ version-bump ]
 
 jobs:
+  # build:
+  #   runs-on: ubuntu-20.04
+  #   timeout-minutes: 5
+  #   steps:
+  #     - name: Checkout sail repo
+  #       uses: actions/checkout@v3
+
+  #     - name: Install python version 3.10
+  #       uses: actions/setup-python@v4
+  #       with:
+  #         python-version: "3.10.*"
+
+  #     - name: Install Sail and its dependencies
+  #       run: |
+  #         pip install ".[all]"
+
+  #     - name: Install scikit-multiflow
+  #       run: pip install scikit-multiflow==0.5.3
+
   test:
     runs-on: ubuntu-20.04
     timeout-minutes: 5
-    needs: build
+    # needs: build
     steps:
       - name: Checkout sail repo
         uses: actions/checkout@v3

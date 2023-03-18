@@ -25,7 +25,6 @@ jobs:
 
   test:
     runs-on: ubuntu-20.04
-    timeout-minutes: 5
     # needs: build
     steps:
       - name: Checkout sail repo

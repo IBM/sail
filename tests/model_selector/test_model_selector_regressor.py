@@ -2,12 +2,14 @@ import time
 
 import numpy as np
 import pandas as pd
-from river import linear_model, optim, preprocessing, stream
+from river import optim, stream
 from sklearn.metrics import r2_score
 from sklearn.model_selection import train_test_split
 
 from sail.model_selector.holdout_best_model import HoldoutBestModelSelector
 from sail.models.native.ielm import IELM
+from sail.models.river.linear_model import LinearRegression
+from sail.models.river.preprocessing import StandardScaler
 
 
 class TestHoldoutBestRegressor:
@@ -34,22 +36,22 @@ class TestHoldoutBestRegressor:
             df_X, df_y, test_size=0.2, random_state=42
         )
 
-        stdScaler_many = preprocessing.StandardScaler()
+        stdScaler_many = StandardScaler()
 
-        model_many = linear_model.LinearRegression(optimizer=optim.RMSProp())
+        model_many = LinearRegression(optimizer=optim.RMSProp())
 
         dataset = stream.iter_pandas(xtrain, ytrain)
 
         x = xtrain
         yi = ytrain
 
-        stdScaler_many.learn_many(x)
-        x = stdScaler_many.transform_many(x)
+        stdScaler_many.partial_fit(x)
+        x = stdScaler_many.transform(x)
 
         ielm_model = IELM(numInputNodes=13, numOutputNodes=1, numHiddenNodes=7)
 
         hedge = HoldoutBestModelSelector(
-            estimators=[linear_model.LinearRegression(), ielm_model],
+            estimators=[LinearRegression(), ielm_model],
             metrics=r2_score,
         )
 
@@ -69,7 +71,7 @@ class TestHoldoutBestRegressor:
             (hedge.get_best_model()).river_estimator.__class__.__name__,
         )
         # print("best model ", hedge.get_best_model_index(x,yi))
-        assert type(hedge.get_best_model()).__name__ == "River2SKLRegressor"
+        assert type(hedge.get_best_model()).__name__ == "LinearRegression"
         assert hedge.get_best_model_index(x, yi) == 1
         # assert (hedge.get_best_model()).river_estimator == "LinearRegression"
 

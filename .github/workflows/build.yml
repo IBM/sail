@@ -53,7 +53,7 @@ jobs:
       - name: Run notebooks with pytest
         run: |
           pytest -s --nbmake -n=auto notebooks/*.ipynb
-          pytest -s --nbmake -n=auto examples/models/*.ipynb
+          pytest -s --nbmake -n=auto examples/*.ipynb
 
       - name: Run examples with pytest
-        run: pytest -s --script-launch-mode=subprocess -n=auto examples/models/*.py
+        run: pytest -s --script-launch-mode=subprocess -n=auto examples/*.py

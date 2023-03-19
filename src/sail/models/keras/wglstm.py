@@ -12,17 +12,12 @@ import scipy.stats as st
 import tensorflow as tf
 from numpy.lib.scimath import sqrt
 from scikeras.wrappers import KerasRegressor
-from tensorflow.keras.layers import LSTM, Activation, Dense, TimeDistributed
-from tensorflow.keras.models import Sequential
-from tensorflow.keras.optimizers import SGD
-from tensorflow.keras.regularizers import l2
 
 from sail.models.keras.base import KerasSerializationMixin
 from sail.utils.stats import nmse
-from sail.visualisation.ts_plot import plot_series
 
 
-class _Model(Sequential):
+class _Model(tf.keras.models.Sequential):
     def __init__(
         self,
         num_of_features=1,
@@ -35,16 +30,22 @@ class _Model(Sequential):
         super(_Model, self).__init__(name="WGLSTM")
         self.window_size = window_size
         self.add(
-            LSTM(
+            tf.keras.layers.LSTM(
                 hidden_layer_neurons,
                 return_sequences=True,
                 stateful=True,
                 batch_input_shape=(1, timesteps, num_of_features),
-                kernel_regularizer=l2(regularization_factor),
+                kernel_regularizer=tf.keras.regularizers.l2(
+                    regularization_factor
+                ),
             )
         )
-        self.add(TimeDistributed(Dense(units=num_of_features)))
-        self.add(Activation(hidden_layer_activation))
+        self.add(
+            tf.keras.layers.TimeDistributed(
+                tf.keras.layers.Dense(units=num_of_features)
+            )
+        )
+        self.add(tf.keras.layers.Activation(hidden_layer_activation))
 
     def fit(self, x, y, **kwargs):
         """
@@ -376,7 +377,7 @@ class WGLSTM(KerasRegressor, KerasSerializationMixin):
     def __init__(
         self,
         loss="mse",
-        optimizer=SGD(
+        optimizer=tf.keras.optimizers.SGD(
             learning_rate=0.002, momentum=0.03, weight_decay=0.0, nesterov=True
         ),
         metrics=None,

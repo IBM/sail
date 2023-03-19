@@ -47,5 +47,13 @@ jobs:
       - name: Install scikit-multiflow
         run: pip install scikit-multiflow==0.5.3
 
-      - name: Run tests with pytest
-        run: python -m pytest -s --tb=native tests
+      - name: Run unit tests with pytest
+        run: pytest -s -n=auto --tb=native tests
+
+      - name: Run notebooks with pytest
+        run: |
+          pytest -s --nbmake -n=auto notebooks/*.ipynb
+          pytest -s --nbmake -n=auto examples/models/*.ipynb
+
+      - name: Run examples with pytest
+        run: pytest -s --script-launch-mode=subprocess -n=auto examples/models/*.py

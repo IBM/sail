@@ -1,10 +1,10 @@
-from turtle import shape
-from sail.models.keras import OSELM
-import tensorflow.keras as keras
 import numpy as np
 import pandas as pd
 import tensorflow as tf
 from matplotlib import pyplot as plt
+from tensorflow import keras
+
+from sail.models.keras import OSELM
 
 model = OSELM(
     loss="mae",
@@ -72,7 +72,9 @@ T = t_train_seq
 
 for i in range(numLags, 800):
     model.partial_fit(np.array(X[[i], :]), np.array(T[[i], :]), verbose=0)
-    train_dataset = tf.data.Dataset.from_tensor_slices((X[[i], :], T[[i], :])).batch(1)
+    train_dataset = tf.data.Dataset.from_tensor_slices(
+        (X[[i], :], T[[i], :])
+    ).batch(1)
     Y = model.predict(X[[i + 1], :])
     predictions.append(Y[0][0])
     target.append(T[i][0])
@@ -103,7 +105,9 @@ print("NRMSE {}".format(nrmse))
 
 algorithm = "OSELM"
 plt.figure(figsize=(15, 6))
-(targetPlot,) = plt.plot(target, label="target", color="red", marker=".", linestyle="-")
+(targetPlot,) = plt.plot(
+    target, label="target", color="red", marker=".", linestyle="-"
+)
 (predictedPlot,) = plt.plot(
     predictions, label="predicted", color="blue", marker=".", linestyle=":"
 )
@@ -118,7 +122,7 @@ plt.title(
     fontweight=40,
 )
 plot_path = "./predictionPlot.png"
-plt.savefig(plot_path, plot_pathbbox_inches="tight")
+plt.savefig(plot_path)
 plt.draw()
 plt.show()
 plt.pause(0)

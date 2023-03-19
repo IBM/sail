@@ -1,10 +1,12 @@
 from sklearn.metrics import accuracy_score
+
 from .base import ModelSelectorBase
-from river.compat.river_to_sklearn import convert_river_to_sklearn
 
 
 class HoldoutBestModelSelector(ModelSelectorBase):
-    def __init__(self, estimators, fitted_estimators=[], metrics=accuracy_score):
+    def __init__(
+        self, estimators, fitted_estimators=[], metrics=accuracy_score
+    ):
         """
         :param estimators: Estimator objects with partial_fit defined
                     (incremental learning models).
@@ -14,10 +16,11 @@ class HoldoutBestModelSelector(ModelSelectorBase):
            (ex. metrics.accuracy_score in scikit-learn)
         """
         self.best_model_index = 0
-        estimators = [convert_river_to_sklearn(est) if "river" in est.__module__ else est
-                      for est in estimators]
-        super().__init__(estimators=estimators, fitted_estimators=fitted_estimators,
-                         metrics=metrics)
+        super().__init__(
+            estimators=estimators,
+            fitted_estimators=fitted_estimators,
+            metrics=metrics,
+        )
 
     def partial_fit(self, X, y=None, classes=None):
         """
@@ -49,4 +52,3 @@ class HoldoutBestModelSelector(ModelSelectorBase):
             # scores.append(estimator.predict(X))
             scores.append(self.metrics(y_test, estimator.predict(X_test)))
         return scores.index(max(scores))
-

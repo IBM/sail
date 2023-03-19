@@ -10,11 +10,11 @@ The library is for experimenting with streaming processing engines (SPEs) and in
 - Hyperparameter optimization for incremental models (TODO).
 - Interface and pipelines that implement incremental models for both offline and online learning.
 
-# SAIL Architecture
+## SAIL Architecture
 
 ![Architecture](architecture.png)
 
-# Difference with River and other existing incremental machine learning libraries.
+## Difference with River and other existing incremental machine learning libraries.
 
 Sail leverages the existing machine learning libraries like River, sklearn etc and creates a common set of APIs to run these models in the backend. In particular, while River provides minimal utilities for deep learning models, it does not focus on deep learning models developed through Pytorch and Keras. In addition, models in Sail are parallelized using Ray. The parallelization results in three major advatages that are particularly important for incremental models with high volume and high velocity data:
 
@@ -22,11 +22,11 @@ Sail leverages the existing machine learning libraries like River, sklearn etc a
 - Faster computational times for ensemble of forecasts.
 - Creates a clean interface for developing AutoML algorithms for incremental models.
 
-# Spark vs Ray for incremental models.
+## Spark vs Ray for incremental models.
 
 Sail could have been parallelized using Spark as well. However, to keep the streaming processing engines and machine learning tasks independent, Ray was preferred as the data can then be handled using Pandas, Numpy etc efficiently. This flexibility further allows using other SPEs like Flink or Storm without updating the parallelization framework for IML models.
 
-# 🛠 Installation
+## 🛠 Installation
 
 Sail is intended to work with **Python 3.7 and above**. You can install the latest version from GitHub as so:
 
@@ -50,6 +50,14 @@ Sail has an additional dependency on Scikit-Multiflow which can be installed as 
 pip install scikit-multiflow==0.5.3
 ```
 
-# Acknowledgment
+## ✍️ Examples and Notebooks
+
+Examples and notebooks are located in the `examples` and `notebook` respectively. Please run the below command to install the necessary packages to run examples.
+
+```sh
+pip install -e ".[examples]"
+```
+
+## Acknowledgment
 
 This project has received funding from the European Union’s Horizon 2020 research and innovation programme under grant agreement No 957345 for MORE project.

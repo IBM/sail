@@ -3,13 +3,13 @@ Keras wrapper for The Online Sequential Extreme Learning Machine (OSELM).
 """
 
 import tensorflow as tf
-import tensorflow.keras as keras
 from scikeras.wrappers import KerasRegressor
 from tensorflow.python.keras.engine import data_adapter
+
 from sail.models.keras.base import KerasSerializationMixin
 
 
-class _Model(keras.Model):
+class _Model(tf.keras.Model):
     def __init__(
         self,
         num_hidden_nodes: int = 100,
@@ -51,9 +51,13 @@ class _Model(keras.Model):
         self.hidden_layer = tf.keras.layers.Dense(
             units=self.num_hidden_nodes,
             input_shape=(n_input_nodes,),
-            kernel_initializer=tf.keras.initializers.RandomUniform(minval=-1, maxval=1),
+            kernel_initializer=tf.keras.initializers.RandomUniform(
+                minval=-1, maxval=1
+            ),
             use_bias=True,
-            bias_initializer=tf.keras.initializers.RandomUniform(minval=-1, maxval=1),
+            bias_initializer=tf.keras.initializers.RandomUniform(
+                minval=-1, maxval=1
+            ),
             activation=self.hidden_layer_activation,
             dtype=tf.float32,
             name="hidden_layer",
@@ -61,7 +65,8 @@ class _Model(keras.Model):
 
         self.__p = tf.Variable(
             tf.multiply(
-                tf.ones(shape=[self.num_hidden_nodes, self.num_hidden_nodes]), 0.1
+                tf.ones(shape=[self.num_hidden_nodes, self.num_hidden_nodes]),
+                0.1,
             ),
             dtype=tf.float32,
             name="p",
@@ -74,6 +79,7 @@ class _Model(keras.Model):
             name="beta",
         )
 
+    @tf.autograph.experimental.do_not_convert
     def call(self, inputs, training=None):
         """
         Calls the model on new inputs and returns the outputs as tensors.
@@ -106,10 +112,12 @@ class _Model(keras.Model):
         """
 
         # Unpack the data
-        data = tf.python.keras.engine.data_adapter.expand_1d(data)
-        features, targets, _ = tf.keras.engine.data_adapter.unpack_x_y_sample_weight(
-            data
-        )
+        data = data_adapter.expand_1d(data)
+        (
+            features,
+            targets,
+            _,
+        ) = data_adapter.unpack_x_y_sample_weight(data)
 
         # Compute predictions
         predictions = self(features, training=False)
@@ -155,7 +163,9 @@ class _Model(keras.Model):
         )
         pHT = tf.matmul(self.__p, HT)
         Hbeta = tf.matmul(H, self.__beta)
-        self.__beta.assign(self.__beta + tf.matmul(pHT, tf.subtract(targets, Hbeta)))
+        self.__beta.assign(
+            self.__beta + tf.matmul(pHT, tf.subtract(targets, Hbeta))
+        )
 
         # use __beta to make final prediction
         predictions = tf.matmul(H, self.__beta)
@@ -221,9 +231,8 @@ class OSELM(KerasRegressor, KerasSerializationMixin):
         hidden_layer_activation=tf.nn.sigmoid,
         prediction_window_size=1,
         forgetting_factor=0.5,
-        **kwargs
+        **kwargs,
     ) -> None:
-
         super(OSELM, self).__init__(
             _Model(
                 num_hidden_nodes,
@@ -236,7 +245,7 @@ class OSELM(KerasRegressor, KerasSerializationMixin):
             metrics=metrics,
             epochs=epochs,
             verbose=verbose,
-            **kwargs
+            **kwargs,
         )
         self.prediction_window_size = prediction_window_size
 

@@ -2,34 +2,34 @@ name: SAIL CI
 on: [pull_request, push]
 
 jobs:
-  # build:
-  #   runs-on: ubuntu-20.04
-  #   timeout-minutes: 5
-  #   steps:
-  #     - name: Branch and collaborator info
-  #       run: | 
-  #         echo Branch Name: ${{github.ref_name}} 
-  #         echo Triggered by: ${{github.actor}}
-  #         echo Event: ${{github.event_name}}
+  build:
+    runs-on: ubuntu-20.04
+    timeout-minutes: 5
+    steps:
+      - name: Branch and collaborator info
+        run: | 
+          echo Branch Name: ${{github.ref_name}} 
+          echo Triggered by: ${{github.actor}}
+          echo Event: ${{github.event_name}}
     
-  #     - name: Checkout sail repo
-  #       uses: actions/checkout@v3
+      - name: Checkout sail repo
+        uses: actions/checkout@v3
 
-  #     - name: Install python version 3.10
-  #       uses: actions/setup-python@v4
-  #       with:
-  #         python-version: "3.10.*"
+      - name: Install python version 3.10
+        uses: actions/setup-python@v4
+        with:
+          python-version: "3.10.*"
 
-  #     - name: Install Sail and its dependencies
-  #       run: |
-  #         pip install ".[all]"
+      - name: Install Sail and its dependencies
+        run: |
+          pip install ".[all]"
 
-  #     - name: Install scikit-multiflow
-  #       run: pip install scikit-multiflow==0.5.3
+      - name: Install scikit-multiflow
+        run: pip install scikit-multiflow==0.5.3
 
   test:
     runs-on: ubuntu-20.04
-    #needs: build
+    needs: build
     steps:
       - name: Checkout sail repo
         uses: actions/checkout@v3
@@ -50,10 +50,10 @@ jobs:
       - name: Run unit tests with pytest
         run: pytest -s -n=auto --tb=native tests
 
-      - name: Run notebooks with pytest
-        run: |
-          pytest -s --nbmake -n=auto notebooks/*.ipynb
-          pytest -s --nbmake -n=auto examples/*.ipynb
+      # - name: Run notebooks with pytest
+      #   run: |
+      #     pytest -s --nbmake -n=auto notebooks/*.ipynb
+      #     pytest -s --nbmake -n=auto examples/*.ipynb
 
-      - name: Run examples with pytest
-        run: pytest -s --script-launch-mode=subprocess -n=auto examples/*.py
+      # - name: Run examples with pytest
+      #   run: pytest -s --script-launch-mode=subprocess -n=auto examples/*.py

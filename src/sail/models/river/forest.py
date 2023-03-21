@@ -1,10 +1,10 @@
 import typing
-from river.drift import ADWIN
-from river import base, metrics
-from river.tree.splitter import Splitter
-from sail.models.river.base import BaseRiverClassifier, BaseRiverRegressor
-import river.ensemble.adaptive_random_forest as adaptive_random_forest
 
+import river.ensemble.adaptive_random_forest as adaptive_random_forest
+from river import base, metrics
+from river.compat import River2SKLClassifier, River2SKLRegressor
+from river.drift import ADWIN
+from river.tree.splitter import Splitter
 
 __all__ = [
     "AdaptiveRandomForestClassifier",
@@ -12,7 +12,7 @@ __all__ = [
 ]
 
 
-class AdaptiveRandomForestClassifier(BaseRiverClassifier):
+class AdaptiveRandomForestClassifier(River2SKLClassifier):
     def __init__(
         self,
         n_models: int = 10,
@@ -73,7 +73,7 @@ class AdaptiveRandomForestClassifier(BaseRiverClassifier):
         )
 
 
-class AdaptiveRandomForestRegressor(BaseRiverRegressor):
+class AdaptiveRandomForestRegressor(River2SKLRegressor):
     def __init__(
         self,
         n_models: int = 10,

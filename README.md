@@ -42,6 +42,7 @@ Supported `OPTION` include:
 - pytorch
 - river
 - ray
+- examples
 - all
 
 Sail has an additional dependency on Scikit-Multiflow which can be installed as follows:

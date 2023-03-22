@@ -1,7 +1,6 @@
 # SAIL
 
-[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT) ![main branch](https://github.com/IBM/sail/actions/workflows/build.yml/badge.svg?branch=main)
-<img alt="Code style: black" src="https://img.shields.io/badge/code%20style-black-000000.svg"></a> [![Python](https://img.shields.io/pypi/pyversions/tensorflow.svg)](#)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT) ![main branch](https://github.com/IBM/sail/actions/workflows/build.yml/badge.svg?branch=main) [![](https://img.shields.io/badge/python-3.8+-blue.svg)](https://www.python.org/downloads/) <img alt="Code style: black" src="https://img.shields.io/badge/code%20style-black-000000.svg"></a>
 
 The library is for experimenting with streaming processing engines (SPEs) and incremental machine learning (IML) models. The main features of Sail are:
 
@@ -28,10 +27,10 @@ Sail could have been parallelized using Spark as well. However, to keep the stre
 
 ## 🛠 Installation
 
-Sail is intended to work with **Python 3.7 and above**. You can install the latest version from GitHub as so:
+Sail is intended to work with **Python 3.8 and above**. You can install the latest version from GitHub as so:
 
 ```sh
-git clone https://github.com/IBM/sail.git
+git clone -b version-bump https://github.com/IBM/sail.git
 cd sail
 pip install -e ".[OPTION]"
 ```
@@ -42,8 +41,10 @@ Supported `OPTION` include:
 - pytorch
 - river
 - ray
-- examples
-- all
+- dev
+- tests
+- examples - to run notebooks and examples
+- all - all of the above
 
 Sail has an additional dependency on Scikit-Multiflow which can be installed as follows:
 

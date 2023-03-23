@@ -1,5 +1,9 @@
 name: SAIL CI
-on: [pull_request, push]
+on:
+  push:
+  pull_request:
+    branches:
+      - main
 
 jobs:
   build:
@@ -48,7 +52,7 @@ jobs:
         run: pip install scikit-multiflow==0.5.3
 
       - name: Run unit tests with pytest
-        run: pytest -s -n=auto --tb=native tests
+        run: pytest -s --tb=native tests
 
       # - name: Run notebooks with pytest
       #   run: |

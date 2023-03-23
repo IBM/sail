@@ -378,7 +378,7 @@ class WGLSTM(KerasRegressor, KerasSerializationMixin):
         self,
         loss="mse",
         optimizer=tf.keras.optimizers.SGD(
-            learning_rate=0.002, momentum=0.03, weight_decay=0.0, nesterov=True
+            learning_rate=0.002, momentum=0.03, decay=0.0, nesterov=True
         ),
         metrics=None,
         epochs=1,

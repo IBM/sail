@@ -1,4 +1,5 @@
 import numpy as np
+
 from sail.models.keras import WGLSTM
 from sail.utils.ts_utils import generate_features_and_targets
 
@@ -25,7 +26,9 @@ class TestKerasSerialization:
 
     def test_model_serialization(self, regression_dataset, create_tmp_dir):
         dirpath = create_tmp_dir
-        X, y = generate_features_and_targets(regression_dataset, "Global_active_power")
+        X, y = generate_features_and_targets(
+            regression_dataset, "Global_active_power"
+        )
         model_1 = self.wglstm_model()
 
         # Initial training

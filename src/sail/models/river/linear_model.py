@@ -3,7 +3,6 @@ import river.linear_model as linear_model
 import typing
 from river import optim
 
-
 __all__ = [
     "ALMAClassifier",
     "PAClassifier",
@@ -18,19 +17,21 @@ __all__ = [
 class LogisticRegression(River2SKLClassifier):
     def __init__(
         self,
-        optimizer: optim.Optimizer = None,
+        optimizer: optim.base.Optimizer = None,
         loss: optim.losses.BinaryLoss = None,
         l2=0.0,
+        l1=0.0,
         intercept_init=0.0,
-        intercept_lr: typing.Union[float, optim.schedulers.Scheduler] = 0.01,
+        intercept_lr: typing.Union[float, optim.base.Scheduler] = 0.01,
         clip_gradient=1e12,
-        initializer: optim.initializers.Initializer = None,
+        initializer: optim.base.Initializer = None,
     ):
         super(LogisticRegression, self).__init__(
             river_estimator=linear_model.LogisticRegression(
                 optimizer,
                 loss,
                 l2,
+                l1,
                 intercept_init,
                 intercept_lr,
                 clip_gradient,
@@ -42,19 +43,21 @@ class LogisticRegression(River2SKLClassifier):
 class LinearRegression(River2SKLRegressor):
     def __init__(
         self,
-        optimizer: optim.Optimizer = None,
+        optimizer: optim.base.Optimizer = None,
         loss: optim.losses.RegressionLoss = None,
         l2=0.0,
+        l1=0.0,
         intercept_init=0.0,
-        intercept_lr: typing.Union[optim.schedulers.Scheduler, float] = 0.01,
+        intercept_lr: typing.Union[optim.base.Scheduler, float] = 0.01,
         clip_gradient=1e12,
-        initializer: optim.initializers.Initializer = None,
+        initializer: optim.base.Initializer = None,
     ):
         super(LinearRegression, self).__init__(
             river_estimator=linear_model.LinearRegression(
                 optimizer,
                 loss,
                 l2,
+                l1,
                 intercept_init,
                 intercept_lr,
                 clip_gradient,
@@ -108,7 +111,7 @@ class PARegressor(River2SKLRegressor):
 class SoftmaxRegression(River2SKLClassifier):
     def __init__(
         self,
-        optimizer: optim.Optimizer = None,
+        optimizer: optim.base.Optimizer = None,
         loss: optim.losses.MultiClassLoss = None,
         l2=0,
     ):

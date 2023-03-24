@@ -1,29 +1,14 @@
-import unittest
-from river import preprocessing, linear_model, optim
-from skmultiflow.data.hyper_plane_generator import HyperplaneGenerator
-from sail.models.ensemble.distAggregateRegressor import DistAggregateRegressor
-import numpy as np
 from array import array
-import ray
-import warnings
+
+import numpy as np
+from river import linear_model, optim
+from skmultiflow.data.hyper_plane_generator import HyperplaneGenerator
+
+from sail.models.ensemble.distAggregateRegressor import DistAggregateRegressor
 
 
-class TestDistAggregateRegressor(unittest.TestCase):
-    def setUp(self):
-        warnings.simplefilter("ignore", ResourceWarning)
-
-    def tearDown(self):
-        warnings.simplefilter("default", ResourceWarning)
-
-    @classmethod
-    def setUpClass(cls):
-        ray.init(local_mode=True)
-
-    @classmethod
-    def tearDownClass(cls):
-        ray.shutdown()
-
-    def test_dar(self):
+class TestDistAggregateRegressor:
+    def test_dar(self, ray_setup):
         stream = HyperplaneGenerator(random_state=1)
 
         optimizers = [optim.SGD(0.01), optim.RMSProp(), optim.AdaGrad()]
@@ -97,6 +82,4 @@ class TestDistAggregateRegressor(unittest.TestCase):
         assert np.allclose(y_pred, expected_predictions)
         assert type(learner.predict(X)) == np.ndarray
 
-
-if __name__ == "__main__":
-    unittest.main()
+        print("Action: ", ray_setup)

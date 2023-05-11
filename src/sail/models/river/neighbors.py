@@ -1,11 +1,11 @@
 import typing
 from river import neighbors
-from river.compat import River2SKLClassifier, River2SKLRegressor
+from sail.models.river.base import SailRiverClassifier, SailRiverRegressor
 
 __all__ = ["NearestNeighbors", "KNNClassifier", "KNNRegressor"]
 
 
-class NearestNeighbors(River2SKLClassifier):
+class NearestNeighbors(SailRiverClassifier):
     def __init__(
         self,
         window_size: int,
@@ -23,7 +23,7 @@ class NearestNeighbors(River2SKLClassifier):
         )
 
 
-class KNNClassifier(River2SKLClassifier):
+class KNNClassifier(SailRiverClassifier):
     def __init__(
         self,
         n_neighbors: int = 5,
@@ -31,7 +31,7 @@ class KNNClassifier(River2SKLClassifier):
         leaf_size: int = 30,
         p: float = 2,
         weighted: bool = True,
-        **kwargs
+        **kwargs,
     ):
         super(KNNClassifier, self).__init__(
             river_estimator=neighbors.KNNClassifier(
@@ -40,7 +40,7 @@ class KNNClassifier(River2SKLClassifier):
         )
 
 
-class KNNRegressor(River2SKLRegressor):
+class KNNRegressor(SailRiverRegressor):
     def __init__(
         self,
         n_neighbors: int = 5,
@@ -48,15 +48,10 @@ class KNNRegressor(River2SKLRegressor):
         leaf_size: int = 30,
         p: float = 2,
         aggregation_method: str = "mean",
-        **kwargs
+        **kwargs,
     ):
         super(KNNRegressor, self).__init__(
             river_estimator=neighbors.KNNRegressor(
-                n_neighbors,
-                window_size,
-                leaf_size,
-                p,
-                aggregation_method,
-                **kwargs
+                n_neighbors, window_size, leaf_size, p, aggregation_method, **kwargs
             )
         )

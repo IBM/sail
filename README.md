@@ -30,7 +30,7 @@ Sail could have been parallelized using Spark as well. However, to keep the stre
 Sail is intended to work with **Python 3.8 and above**. You can install the latest version from GitHub as so:
 
 ```sh
-git clone -b version-bump https://github.com/IBM/sail.git
+git clone https://github.com/IBM/sail.git
 cd sail
 pip install -e ".[OPTION]"
 ```

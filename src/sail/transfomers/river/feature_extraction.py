@@ -1,11 +1,10 @@
-import typing
-
 import river.feature_extraction.agg as agg
 import river.feature_extraction.kernel_approx as kernel_approx
 import river.feature_extraction.poly as poly
 import river.feature_extraction.vectorize as vectorize
-from river import stats
 from river.compat import River2SKLTransformer
+import typing
+from river import stats
 
 __all__ = [
     "Agg",
@@ -22,7 +21,7 @@ class Agg(River2SKLTransformer):
         self,
         on: str,
         by: typing.Optional[typing.Union[str, typing.List[str]]],
-        how: stats.base.Univariate,
+        how: stats.Univariate,
     ):
         super(Agg, self).__init__(
             river_estimator=agg.Agg(
@@ -37,7 +36,7 @@ class TargetAgg(River2SKLTransformer):
     def __init__(
         self,
         by: typing.Optional[typing.Union[str, typing.List[str]]],
-        how: stats.base.Univariate,
+        how: stats.Univariate,
         target_name="y",
     ):
         super(TargetAgg, self).__init__(

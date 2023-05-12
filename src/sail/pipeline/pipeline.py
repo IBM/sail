@@ -41,15 +41,11 @@ class SAILPipeline(Pipeline):
 
         def _fit_transform_one(transformer, X, y, **fit_params):
             if hasattr(transformer, "partial_fit"):
-                transformed_X = transformer.partial_fit(
-                    X, y, **fit_params
-                ).transform(X)
+                transformed_X = transformer.partial_fit(X, y, **fit_params).transform(X)
             elif hasattr(transformer, "fit_transform"):
                 transformed_X = transformer.fit_transform(X, y, **fit_params)
             else:
-                transformed_X = transformer.fit(X, y, **fit_params).transform(
-                    X
-                )
+                transformed_X = transformer.fit(X, y, **fit_params).transform(X)
             return transformed_X, transformer
 
         fit_transform_one_cached = memory.cache(_fit_transform_one)
@@ -58,9 +54,7 @@ class SAILPipeline(Pipeline):
             with_final=False, filter_passthrough=True
         ):
             if transformer is None or transformer == "passthrough":
-                with _print_elapsed_time(
-                    "Pipeline", self._log_message(step_idx)
-                ):
+                with _print_elapsed_time("Pipeline", self._log_message(step_idx)):
                     continue
 
             if hasattr(memory, "location") and memory.location is None:
@@ -81,19 +75,18 @@ class SAILPipeline(Pipeline):
             # from the cache.
             self.steps[step_idx] = (name, fitted_transformer)
 
-        with _print_elapsed_time(
-            "Pipeline", self._log_message(len(self.steps) - 1)
-        ):
+        with _print_elapsed_time("Pipeline", self._log_message(len(self.steps) - 1)):
             if self._final_estimator != "passthrough":
                 if not hasattr(self._final_estimator, "partial_fit"):
                     raise AttributeError(
                         f"Final Estimator '{self.steps[-1][0]}' does not implement partial_fit()."
                     )
                 fit_params_last_step = fit_params_steps[self.steps[-1][0]]
-                if "classes" not in fit_params_last_step:
-                    fit_params_last_step[
-                        "classes"
-                    ] = utils.multiclass.unique_labels(y)
+                if (
+                    self._final_estimator._estimator_type == "classifier"
+                    and "classes" not in fit_params_last_step
+                ):
+                    fit_params_last_step["classes"] = utils.multiclass.unique_labels(y)
                 self._final_estimator.partial_fit(X, y, **fit_params_last_step)
 
         return self

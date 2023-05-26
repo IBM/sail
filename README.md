@@ -38,13 +38,15 @@ pip install -e ".[OPTION]"
 Supported `OPTION` include:
 
 - tensorflow
+- tensorflow_arm64
 - pytorch
 - river
 - ray
 - dev
 - tests
-- examples - to run notebooks and examples
-- all - all of the above
+- examples : to run notebooks and examples
+- all : all of the above
+- all_arm64 : Apple ARM64 version all of the above
 
 Sail has an additional dependency on Scikit-Multiflow which can be installed as follows:
 

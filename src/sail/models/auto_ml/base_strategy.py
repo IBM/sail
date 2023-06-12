@@ -16,7 +16,6 @@ LOGGER = configure_logger()
 class PipelineActionType(Enum):
     DATA_COLLECTION = auto()
     FIND_BEST_PIPELINE = auto()
-    PREDICT = auto()
     SCORE_AND_DETECT_DRIFT = auto()
     FIT_MODEL = auto()
     PARTIAL_FIT_MODEL = auto()
@@ -108,7 +107,7 @@ class PipelineStrategy:
             self.pipeline_actions.current_action
             == PipelineActionType.PARTIAL_FIT_BEST_PIPELINE
         ):
-            self._find_best_pipeline_generic(self.search_method.param_grid)
+            self._find_best_pipeline(tune_params, **fit_params)
         elif (
             self.pipeline_actions.current_action
             == PipelineActionType.SCORE_AND_DETECT_DRIFT

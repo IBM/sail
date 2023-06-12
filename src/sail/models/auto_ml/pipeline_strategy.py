@@ -84,9 +84,11 @@ class DetectAndWarmStart(PipelineStrategy):
         self.pipeline_actions = PipelineActions()
         self.pipeline_actions.add_action(PipelineActionType.DATA_COLLECTION)
         self.pipeline_actions.add_action(PipelineActionType.FIND_BEST_PIPELINE)
+        self.pipeline_actions.add_action(PipelineActionType.SCORE_AND_DETECT_DRIFT)
+        self.pipeline_actions.add_action(PipelineActionType.DATA_COLLECTION)
         self.pipeline_actions.add_action(
-            PipelineActionType.SCORE_AND_DETECT_DRIFT,
-            next=PipelineActionType.DATA_COLLECTION,
+            PipelineActionType.PARTIAL_FIT_BEST_PIPELINE,
+            next=PipelineActionType.SCORE_AND_DETECT_DRIFT,
         )
 
         LOGGER.info(

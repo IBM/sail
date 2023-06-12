@@ -9,7 +9,7 @@ from sklearn.model_selection import train_test_split
 from sail.model_selector.holdout_best_model import HoldoutBestModelSelector
 from sail.models.native.ielm import IELM
 from sail.models.river.linear_model import LinearRegression
-from sail.models.river.preprocessing import StandardScaler
+from sail.transfomers.river.preprocessing import StandardScaler
 
 
 class TestHoldoutBestRegressor:

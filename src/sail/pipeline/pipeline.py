@@ -77,16 +77,30 @@ class SAILPipeline(Pipeline):
 
         with _print_elapsed_time("Pipeline", self._log_message(len(self.steps) - 1)):
             if self._final_estimator != "passthrough":
-                if not hasattr(self._final_estimator, "partial_fit"):
-                    raise AttributeError(
-                        f"Final Estimator '{self.steps[-1][0]}' does not implement partial_fit()."
-                    )
-                fit_params_last_step = fit_params_steps[self.steps[-1][0]]
-                if (
-                    self._final_estimator._estimator_type == "classifier"
-                    and "classes" not in fit_params_last_step
-                ):
-                    fit_params_last_step["classes"] = utils.multiclass.unique_labels(y)
-                self._final_estimator.partial_fit(X, y, **fit_params_last_step)
+                self.fit_final_estimator(X, y, warm_start=True, **fit_params_steps)
 
         return self
+
+    def fit_final_estimator(self, X, y, warm_start=False, **fit_params_steps):
+        if not fit_params_steps:
+            fit_params_steps = self._check_fit_params(**fit_params_steps)
+        if warm_start:
+            if not hasattr(self._final_estimator, "partial_fit"):
+                raise AttributeError(
+                    f"Final Estimator '{self.steps[-1][0]}' does not implement partial_fit()."
+                )
+            fit_params_last_step = fit_params_steps[self.steps[-1][0]]
+            if (
+                self._final_estimator._estimator_type == "classifier"
+                and "classes" not in fit_params_last_step
+            ):
+                fit_params_last_step["classes"] = utils.multiclass.unique_labels(y)
+                self._final_estimator.partial_fit(X, y, **fit_params_last_step)
+        else:
+            if not hasattr(self._final_estimator, "fit"):
+                raise AttributeError(
+                    f"Final Estimator '{self.steps[-1][0]}' does not implement fit()."
+                )
+            fit_params_last_step = fit_params_steps[self.steps[-1][0]]
+            print("FIT_FIT_FIT_FIT")
+            self._final_estimator.fit(X, y, **fit_params_last_step)

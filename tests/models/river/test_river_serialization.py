@@ -2,7 +2,6 @@ from tabnanny import verbose
 import pytest
 import numpy as np
 from sail.models.river.linear_model import LogisticRegression
-from sail.models.river.base import save, load
 
 
 class TestRiverSerialization:
@@ -19,11 +18,11 @@ class TestRiverSerialization:
         # record stats and save model
         model_1_weights = model_1.instance_.weights
         model_1_intercept = model_1.instance_.intercept
-        save(model_1, dirpath)
+        model_1.save_model(dirpath)
 
         # load a new model and record stats
         model_2 = LogisticRegression()
-        model_2 = load(dirpath)
+        model_2 = model_2.load_model(dirpath)
         model_2_weights = model_2.instance_.weights
         model_2_intercept = model_2.instance_.intercept
 

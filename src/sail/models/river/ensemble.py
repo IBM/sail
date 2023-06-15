@@ -1,11 +1,12 @@
-from river import base
-from river.metrics.base import Metric
+import typing
+
 import river.ensemble.bagging as bagging
 import river.ensemble.boosting as boosting
 import river.ensemble.streaming_random_patches as streaming_random_patches
-from river.compat import River2SKLRegressor, River2SKLClassifier
-import typing
+from river import base
+from river.metrics.base import Metric
 
+from sail.models.river.base import SailRiverClassifier, SailRiverRegressor
 
 __all__ = [
     "AdaBoostClassifier",
@@ -17,28 +18,28 @@ __all__ = [
 ]
 
 
-class BaggingClassifier(River2SKLClassifier):
+class BaggingClassifier(SailRiverClassifier):
     def __init__(self, model: base.Classifier, n_models=10, seed: int = None):
         super(BaggingClassifier, self).__init__(
             river_estimator=bagging.BaggingClassifier(model, n_models, seed)
         )
 
 
-class BaggingRegressor(River2SKLRegressor):
+class BaggingRegressor(SailRiverRegressor):
     def __init__(self, model: base.Regressor, n_models=10, seed: int = None):
         super(BaggingRegressor, self).__init__(
             river_estimator=bagging.BaggingRegressor(model, n_models, seed)
         )
 
 
-class ADWINBaggingClassifier(River2SKLClassifier):
+class ADWINBaggingClassifier(SailRiverClassifier):
     def __init__(self, model: base.Classifier, n_models=10, seed: int = None):
         super(ADWINBaggingClassifier, self).__init__(
             river_estimator=bagging.ADWINBaggingClassifier(model, n_models, seed)
         )
 
 
-class LeveragingBaggingClassifier(River2SKLClassifier):
+class LeveragingBaggingClassifier(SailRiverClassifier):
     def __init__(
         self,
         model: base.Classifier,
@@ -55,14 +56,14 @@ class LeveragingBaggingClassifier(River2SKLClassifier):
         )
 
 
-class AdaBoostClassifier(River2SKLClassifier):
+class AdaBoostClassifier(SailRiverClassifier):
     def __init__(self, model: base.Classifier, n_models=10, seed: int = None):
         super(AdaBoostClassifier, self).__init__(
             river_estimator=boosting.AdaBoostClassifier(model, n_models, seed)
         )
 
 
-class SRPClassifier(River2SKLClassifier):
+class SRPClassifier(SailRiverClassifier):
     def __init__(
         self,
         model: base.Estimator = None,

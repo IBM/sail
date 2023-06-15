@@ -1,7 +1,7 @@
-from river.compat import River2SKLRegressor, River2SKLClassifier
 import river.linear_model as linear_model
 import typing
 from river import optim
+from sail.models.river.base import SailRiverClassifier, SailRiverRegressor
 
 __all__ = [
     "ALMAClassifier",
@@ -14,7 +14,7 @@ __all__ = [
 ]
 
 
-class LogisticRegression(River2SKLClassifier):
+class LogisticRegression(SailRiverClassifier):
     def __init__(
         self,
         optimizer: optim.base.Optimizer = None,
@@ -40,7 +40,7 @@ class LogisticRegression(River2SKLClassifier):
         )
 
 
-class LinearRegression(River2SKLRegressor):
+class LinearRegression(SailRiverRegressor):
     def __init__(
         self,
         optimizer: optim.base.Optimizer = None,
@@ -66,7 +66,7 @@ class LinearRegression(River2SKLRegressor):
         )
 
 
-class Perceptron(River2SKLClassifier):
+class Perceptron(SailRiverClassifier):
     def __init__(
         self,
         l2=0.0,
@@ -82,7 +82,7 @@ class Perceptron(River2SKLClassifier):
         )
 
 
-class ALMAClassifier(River2SKLClassifier):
+class ALMAClassifier(SailRiverClassifier):
     def __init__(self, p=2, alpha=0.9, B=1 / 0.9, C=2**0.5):
         super(ALMAClassifier, self).__init__(
             river_estimator=linear_model.alma.ALMAClassifier(
@@ -94,21 +94,21 @@ class ALMAClassifier(River2SKLClassifier):
         )
 
 
-class PAClassifier(River2SKLClassifier):
+class PAClassifier(SailRiverClassifier):
     def __init__(self, C=1.0, mode=1, learn_intercept=True):
         super(PAClassifier, self).__init__(
             river_estimator=linear_model.pa.PAClassifier(C, mode, learn_intercept)
         )
 
 
-class PARegressor(River2SKLRegressor):
+class PARegressor(SailRiverRegressor):
     def __init__(self, C=1.0, mode=1, eps=0.1, learn_intercept=True):
         super(PARegressor, self).__init__(
             river_estimator=linear_model.pa.PARegressor(C, mode, eps, learn_intercept)
         )
 
 
-class SoftmaxRegression(River2SKLClassifier):
+class SoftmaxRegression(SailRiverClassifier):
     def __init__(
         self,
         optimizer: optim.base.Optimizer = None,

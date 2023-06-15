@@ -2,9 +2,9 @@ import typing
 
 import river.ensemble.adaptive_random_forest as adaptive_random_forest
 from river import base, metrics
-from river.compat import River2SKLClassifier, River2SKLRegressor
 from river.drift import ADWIN
 from river.tree.splitter import Splitter
+from sail.models.river.base import SailRiverClassifier, SailRiverRegressor
 
 __all__ = [
     "AdaptiveRandomForestClassifier",
@@ -12,7 +12,7 @@ __all__ = [
 ]
 
 
-class AdaptiveRandomForestClassifier(River2SKLClassifier):
+class AdaptiveRandomForestClassifier(SailRiverClassifier):
     def __init__(
         self,
         n_models: int = 10,
@@ -20,12 +20,8 @@ class AdaptiveRandomForestClassifier(River2SKLClassifier):
         lambda_value: int = 6,
         metric: metrics.base.MultiClassMetric = metrics.Accuracy(),
         disable_weighted_vote=False,
-        drift_detector: typing.Union[base.DriftDetector, None] = ADWIN(
-            delta=0.001
-        ),
-        warning_detector: typing.Union[base.DriftDetector, None] = ADWIN(
-            delta=0.01
-        ),
+        drift_detector: typing.Union[base.DriftDetector, None] = ADWIN(delta=0.001),
+        warning_detector: typing.Union[base.DriftDetector, None] = ADWIN(delta=0.01),
         # Tree parameters
         grace_period: int = 50,
         max_depth: int = None,
@@ -73,7 +69,7 @@ class AdaptiveRandomForestClassifier(River2SKLClassifier):
         )
 
 
-class AdaptiveRandomForestRegressor(River2SKLRegressor):
+class AdaptiveRandomForestRegressor(SailRiverRegressor):
     def __init__(
         self,
         n_models: int = 10,

@@ -10,9 +10,9 @@ import numpy as np
 import pandas as pd
 from river import datasets, metrics, optim, stats
 
-from sail.models.river.feature_extraction import TargetAgg
+from sail.transfomers.river.feature_extraction import TargetAgg
 from sail.models.river.linear_model import LinearRegression
-from sail.models.river.preprocessing import StandardScaler
+from sail.transfomers.river.preprocessing import StandardScaler
 
 # Loading the dataset
 dataset = datasets.Bikes()
@@ -40,9 +40,7 @@ for i in range(X.shape[0]):
     x = X.iloc[i]
 
     # Here we apply the incremental StandarScaler to update the values and transform the new example
-    x = np.asarray(
-        list(scaler.learn_one(x).transform_one(x).values())
-    ).reshape(1, -1)
+    x = np.asarray(list(scaler.learn_one(x).transform_one(x).values())).reshape(1, -1)
 
     # Partial_fit to update the linear regression's parameters
     model = model.partial_fit(x, [y[i]])

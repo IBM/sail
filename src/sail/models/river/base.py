@@ -1,31 +1,40 @@
-import os
-from sail.utils.serialization import save_obj, load_obj
+import copy
+import inspect
+import typing
+
+from river.compat import (
+    River2SKLClassifier,
+    River2SKLRegressor,
+    river_to_sklearn,
+)
+from sklearn import preprocessing, utils
+
+from sail.models.base import SAILModel
 from sail.utils.logging import configure_logger
 
 LOGGER = configure_logger()
 
 
-def save(model, model_folder):
-    """
-    Saves the model to pickle format.
+class RiverMixin:
+    def __getattr__(self, __name: str) -> typing.Any:
+        return getattr(self.river_estimator, __name)
 
-    Args:
-        model_folder: String, PathLike, path to SavedModel.
-    """
-    metadata_path = os.path.join(model_folder, "metadata")
-    save_obj(model, metadata_path, "model", serialize_type="joblib")
-    LOGGER.info("Model saved successfully.")
+    def __setattr__(self, __name: str, __value: typing.Any) -> None:
+        if __name in list(inspect.signature(__class__).parameters):
+            setattr(self.river_estimator, __name, __value)
+        else:
+            super().__setattr__(__name, __value)
 
 
-def load(model_folder):
-    """
-    Load the Model from the mentioned folder location
+class RiverBase(SAILModel, RiverMixin):
+    pass
 
-    Args:
-        model_folder: One of the following:
-            - String or `pathlib.Path` object, path to the saved model
-    """
-    metadata_path = os.path.join(model_folder, "metadata")
-    model = load_obj(metadata_path, "model", serialize_type="joblib")
-    LOGGER.info("Model loaded successfully.")
-    return model
+
+class SailRiverRegressor(River2SKLRegressor, RiverBase):
+    def __init__(self, *args, **Kwargs):
+        super(SailRiverRegressor, self).__init__(*args, **Kwargs)
+
+
+class SailRiverClassifier(River2SKLClassifier, RiverBase):
+    def __init__(self, *args, **Kwargs):
+        super(SailRiverClassifier, self).__init__(*args, **Kwargs)

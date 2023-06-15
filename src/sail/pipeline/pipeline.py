@@ -1,3 +1,4 @@
+import inspect
 import uuid
 from typing import List, Tuple
 
@@ -24,14 +25,14 @@ class SAILPipeline(Pipeline):
 
         LOGGER.info("created SAILPipeline object with ID %s", self._uuid)
 
-    def fit(self, X, y=None, **fit_params):
-        self._partial_fit(X, y, **fit_params)
+    def fit(self, X, y=None, warm_start=True, **fit_params):
+        self._partial_fit(X, y, warm_start, **fit_params)
 
-    def partial_fit(self, X, y=None, **fit_params):
+    def partial_fit(self, X, y=None, warm_start=True, **fit_params):
         LOGGER.info("Calling Partial_fit() on the pipeline.")
-        self._partial_fit(X, y, **fit_params)
+        self._partial_fit(X, y, warm_start, **fit_params)
 
-    def _partial_fit(self, X, y=None, **fit_params):
+    def _partial_fit(self, X, y=None, warm_start=True, **fit_params):
         fit_params_steps = self._check_fit_params(**fit_params)
         # shallow copy of steps - this should really be steps_
         self.steps = list(self.steps)
@@ -77,7 +78,9 @@ class SAILPipeline(Pipeline):
 
         with _print_elapsed_time("Pipeline", self._log_message(len(self.steps) - 1)):
             if self._final_estimator != "passthrough":
-                self.fit_final_estimator(X, y, warm_start=True, **fit_params_steps)
+                self.fit_final_estimator(
+                    X, y, warm_start=warm_start, **fit_params_steps
+                )
 
         return self
 
@@ -91,8 +94,8 @@ class SAILPipeline(Pipeline):
                 )
             fit_params_last_step = fit_params_steps[self.steps[-1][0]]
             if (
-                self._final_estimator._estimator_type == "classifier"
-                and "classes" not in fit_params_last_step
+                "classes"
+                in inspect.getfullargspec(self._final_estimator.partial_fit).args
             ):
                 fit_params_last_step["classes"] = utils.multiclass.unique_labels(y)
                 self._final_estimator.partial_fit(X, y, **fit_params_last_step)
@@ -102,5 +105,4 @@ class SAILPipeline(Pipeline):
                     f"Final Estimator '{self.steps[-1][0]}' does not implement fit()."
                 )
             fit_params_last_step = fit_params_steps[self.steps[-1][0]]
-            print("FIT_FIT_FIT_FIT")
             self._final_estimator.fit(X, y, **fit_params_last_step)

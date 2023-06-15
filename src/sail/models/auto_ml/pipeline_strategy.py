@@ -10,7 +10,7 @@ LOGGER = configure_logger()
 
 class DetectAndIncrement(PipelineStrategy):
     def __init__(
-        self, search_method, search_data_size, cumulative_scorer, drift_detector
+        self, search_method, search_data_size, cumulative_scorer, drift_detector, *args
     ) -> None:
         super(DetectAndIncrement, self).__init__(
             search_method, search_data_size, cumulative_scorer, drift_detector
@@ -42,7 +42,7 @@ class DetectAndIncrement(PipelineStrategy):
 
 class DetectAndRetrain(PipelineStrategy):
     def __init__(
-        self, search_method, search_data_size, cumulative_scorer, drift_detector
+        self, search_method, search_data_size, cumulative_scorer, drift_detector, *args
     ) -> None:
         super(DetectAndRetrain, self).__init__(
             search_method, search_data_size, cumulative_scorer, drift_detector
@@ -74,7 +74,12 @@ class DetectAndRetrain(PipelineStrategy):
 
 class DetectAndWarmStart(PipelineStrategy):
     def __init__(
-        self, search_method, search_data_size, cumulative_scorer, drift_detector
+        self,
+        search_method,
+        search_data_size,
+        cumulative_scorer,
+        drift_detector,
+        *args,
     ) -> None:
         super(DetectAndWarmStart, self).__init__(
             search_method, search_data_size, cumulative_scorer, drift_detector
@@ -90,14 +95,9 @@ class DetectAndWarmStart(PipelineStrategy):
             PipelineActionType.PARTIAL_FIT_BEST_PIPELINE,
             next=PipelineActionType.SCORE_AND_DETECT_DRIFT,
         )
-
         LOGGER.info(
             f"Pipeline Strategy [{self.__class__.__name__}] created with actions: {self.pipeline_actions.get_actions()}"
         )
-
-    def _find_best_pipeline(self, tune_params, **fit_params):
-        tune_params.update({"keep_checkpoints_num": 1, "checkpoint_at_end": True})
-        super()._find_best_pipeline(tune_params, **fit_params)
 
     def _detect_drift(self):
         value = self.cumulative_scorer.get()
@@ -111,7 +111,7 @@ class DetectAndWarmStart(PipelineStrategy):
 
 class DetectAndRestart(PipelineStrategy):
     def __init__(
-        self, search_method, search_data_size, cumulative_scorer, drift_detector
+        self, search_method, search_data_size, cumulative_scorer, drift_detector, *args
     ) -> None:
         super(DetectAndRestart, self).__init__(
             search_method, search_data_size, cumulative_scorer, drift_detector
@@ -142,7 +142,7 @@ class DetectAndRestart(PipelineStrategy):
 
 class PeriodicRestart(PipelineStrategy):
     def __init__(
-        self, search_method, search_data_size, cumulative_scorer, drift_detector
+        self, search_method, search_data_size, cumulative_scorer, drift_detector, *args
     ) -> None:
         super(PeriodicRestart, self).__init__(
             search_method, search_data_size, cumulative_scorer, drift_detector

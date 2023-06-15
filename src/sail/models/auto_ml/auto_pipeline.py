@@ -1,25 +1,18 @@
 import importlib
-from enum import Enum, auto
 from typing import Type, Union
-
 import numpy as np
-import pandas as pd
-import tune_sklearn.tune_gridsearch as tune_gridsearch
-
-from sail.models.auto_ml.tune_trainable import _TuneSklearnTrainable
-from ray.tune.sklearn import TuneGridSearchCV, TuneSearchCV
 from river.base import DriftDetector
 from river.drift import PageHinkley
 from sklearn.utils import check_array
-
+import river
 from sail.models.auto_ml.base_strategy import PipelineActionType, PipelineStrategy
 from sail.models.auto_ml.pipeline_strategy import DetectAndIncrement
+from sail.models.auto_ml.tune import SAILTuneGridSearchCV, SAILTuneSearchCV
 from sail.models.base import SAILModel
 from sail.pipeline import SAILPipeline
 from sail.utils.logging import configure_logger
 
 LOGGER = configure_logger()
-# return {"accuracy": 0.8}
 
 
 class SAILAutoPipeline(SAILModel):
@@ -27,7 +20,7 @@ class SAILAutoPipeline(SAILModel):
         self,
         pipeline: SAILPipeline,
         pipeline_params_grid: dict,
-        search_method: Union[None, str, TuneGridSearchCV, TuneSearchCV] = None,
+        search_method: Union[None, str] = None,
         search_method_params: dict = None,
         search_data_size: int = 1000,
         mode: Union["min", "max"] = "max",
@@ -35,14 +28,14 @@ class SAILAutoPipeline(SAILModel):
         drift_detector: Union[str, DriftDetector] = "auto",
         pipeline_strategy: Union[None, str] = None,
     ) -> None:
+        self.mode = mode
+        self.scoring = scoring
         self.pipeline = pipeline
         self.pipeline_params_grid = pipeline_params_grid
         self.search_data_size = search_data_size
         self.search_method = self._check_search_method(
             search_method, search_method_params, mode, scoring
         )
-        self.mode = mode
-        self.scoring = scoring
         self.cumulative_scorer = self._check_scoring(scoring)
         self.drift_detector = self._check_drift_detector(drift_detector)
         self.pipeline_strategy = self.resolve_pipeline_strategy(pipeline_strategy)
@@ -105,7 +98,9 @@ class SAILAutoPipeline(SAILModel):
         try:
             _scoring_class = getattr(module, scoring)
         except AttributeError:
-            raise Exception(f"Method '{scoring}' is not available in River.metrics.")
+            raise Exception(
+                f"Method '{scoring}' is not available in river.metrics. Scoring must be one of the {river.metrics.__all__}."
+            )
         return _scoring_class()
 
     def _check_drift_detector(self, drift_detector) -> DriftDetector:
@@ -126,23 +121,25 @@ class SAILAutoPipeline(SAILModel):
         return _drift_detector_class()
 
     def _check_search_method(self, search_method, search_method_params, mode, scoring):
-        tune_gridsearch._Trainable = _TuneSklearnTrainable
         if search_method is None:
-            _search_class = TuneGridSearchCV
-        elif Type[search_method] in [Type[TuneGridSearchCV], Type[TuneSearchCV]]:
+            _search_class = SAILTuneGridSearchCV
+        elif Type[search_method] in [
+            Type[SAILTuneGridSearchCV],
+            Type[SAILTuneSearchCV],
+        ]:
             _search_class = search_method
         elif isinstance(search_method, str):
-            module = importlib.import_module("ray.tune.sklearn")
+            module = importlib.import_module("sail.models.auto_ml.tune")
             try:
                 _search_class = getattr(module, search_method)
             except AttributeError:
                 raise Exception(
-                    f"Method '{search_method}' is not available in Ray Tune. search_method must be from [TuneGridSearchCV, TuneSearchCV]"
+                    f"Method '{search_method}' is not available. search_method must be from [SAILTuneGridSearchCV, SAILTuneSearchCV] from the module sail.models.auto_ml.tune"
                 )
         else:
             raise TypeError(
-                "`search_method` must be a None or str from "
-                f"[TuneGridSearchCV, TuneSearchCV]. Got {type(search_method)}."
+                "`search_method` must be None or an instance or str from "
+                f"[SAILTuneGridSearchCV, SAILTuneSearchCV] from sail.models.auto_ml.tune. Got {type(search_method)}."
             )
 
         if search_method_params is None:
@@ -152,6 +149,7 @@ class SAILAutoPipeline(SAILModel):
                 "mode": mode,
                 "scoring": "accuracy",
                 "pipeline_auto_early_stop": False,
+                "keep_best_configurations": 1,
             }
 
         return _search_class(

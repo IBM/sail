@@ -102,12 +102,12 @@ class PipelineStrategy:
             self.pipeline_actions.current_action
             == PipelineActionType.FIND_BEST_PIPELINE
         ):
-            self._find_best_pipeline(tune_params, **fit_params)
+            self._find_best_pipeline(**fit_params)
         elif (
             self.pipeline_actions.current_action
             == PipelineActionType.PARTIAL_FIT_BEST_PIPELINE
         ):
-            self._find_best_pipeline(tune_params, **fit_params)
+            self._find_best_pipeline(warm_start=True, **fit_params)
         elif (
             self.pipeline_actions.current_action
             == PipelineActionType.SCORE_AND_DETECT_DRIFT
@@ -139,7 +139,7 @@ class PipelineStrategy:
             )
             self.pipeline_actions.next()
 
-    def _find_best_pipeline(self, tune_params, **fit_params):
+    def _find_best_pipeline(self, tune_params={}, warm_start=False, **fit_params):
         LOGGER.info(f"Pipeline tuning using {self.search_method.__class__}")
         tune_params.update(
             {
@@ -152,6 +152,7 @@ class PipelineStrategy:
         fit_result = self.search_method.fit(
             X=self._input_X,
             y=self._input_y,
+            warm_start=warm_start,
             tune_params=tune_params,
             **fit_params,
         )

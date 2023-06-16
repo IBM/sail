@@ -1,3 +1,4 @@
+import importlib
 import random
 import warnings
 from operator import *
@@ -445,7 +446,8 @@ class SAILTuneSearchCV(TuneSearchCV):
 
             elif self._search_optimization_lower == "optuna":
                 if "sampler" not in search_kwargs:
-                    search_kwargs["sampler"] = getattr("optuna.samplers", "TPESampler")(
+                    module = importlib.import_module("optuna.samplers")
+                    search_kwargs["sampler"] = getattr(module, "TPESampler")(
                         seed=self.seed
                     )
                 elif self.seed:

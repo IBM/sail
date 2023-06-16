@@ -23,18 +23,16 @@ class SAILAutoPipeline(SAILModel):
         search_method: Union[None, str] = None,
         search_method_params: dict = None,
         search_data_size: int = 1000,
-        mode: Union["min", "max"] = "max",
         scoring: str = "Accuracy",
         drift_detector: Union[str, DriftDetector] = "auto",
         pipeline_strategy: Union[None, str] = None,
     ) -> None:
-        self.mode = mode
         self.scoring = scoring
         self.pipeline = pipeline
         self.pipeline_params_grid = pipeline_params_grid
         self.search_data_size = search_data_size
         self.search_method = self._check_search_method(
-            search_method, search_method_params, mode, scoring
+            search_method, search_method_params, scoring
         )
         self.cumulative_scorer = self._check_scoring(scoring)
         self.drift_detector = self._check_drift_detector(drift_detector)
@@ -106,21 +104,25 @@ class SAILAutoPipeline(SAILModel):
     def _check_drift_detector(self, drift_detector) -> DriftDetector:
         if isinstance(drift_detector, DriftDetector):
             return drift_detector
-
-        if drift_detector == "auto":
-            _drift_detector_class = PageHinkley
         elif isinstance(drift_detector, str):
-            module = importlib.import_module("river.drift")
-            try:
-                _drift_detector_class = getattr(module, drift_detector)
-            except AttributeError:
-                raise Exception(
-                    f"Drift Detector '{drift_detector}' is not available in River."
-                )
-
+            if drift_detector == "auto":
+                _drift_detector_class = PageHinkley
+            elif isinstance(drift_detector, str):
+                module = importlib.import_module("river.drift")
+                try:
+                    _drift_detector_class = getattr(module, drift_detector)
+                except AttributeError:
+                    raise Exception(
+                        f"Drift Detector '{drift_detector}' is not available in River. Available drift detectors: {river.drift.__all__}"
+                    )
+        else:
+            raise TypeError(
+                "`drift_detector` must be an instance or str from "
+                f"{river.drift.__all__} from river.drift module. Got {drift_detector.__module__}.{drift_detector.__qualname__}. Set `auto` to use the default."
+            )
         return _drift_detector_class()
 
-    def _check_search_method(self, search_method, search_method_params, mode, scoring):
+    def _check_search_method(self, search_method, search_method_params, scoring):
         if search_method is None:
             _search_class = SAILTuneGridSearchCV
         elif Type[search_method] in [
@@ -134,22 +136,21 @@ class SAILAutoPipeline(SAILModel):
                 _search_class = getattr(module, search_method)
             except AttributeError:
                 raise Exception(
-                    f"Method '{search_method}' is not available. search_method must be from [SAILTuneGridSearchCV, SAILTuneSearchCV] from the module sail.models.auto_ml.tune"
+                    f"Method '{search_method}' is not available. search_method must be from [SAILTuneGridSearchCV, SAILTuneSearchCV] from the module sail.models.auto_ml.tune. Set `None` to use the default."
                 )
         else:
             raise TypeError(
                 "`search_method` must be None or an instance or str from "
-                f"[SAILTuneGridSearchCV, SAILTuneSearchCV] from sail.models.auto_ml.tune. Got {type(search_method)}."
+                f"[SAILTuneGridSearchCV, SAILTuneSearchCV] from sail.models.auto_ml.tune. Got {search_method.__module__}.{search_method.__qualname__}. Set `None` to use the default."
             )
 
         if search_method_params is None:
+            search_method_params = _search_class.default_search_params
+        else:
+            # update params from the default ones if missing any.
             search_method_params = {
-                "max_iters": 1,
-                "early_stopping": False,
-                "mode": mode,
-                "scoring": "accuracy",
-                "pipeline_auto_early_stop": False,
-                "keep_best_configurations": 1,
+                **_search_class.default_search_params,
+                **search_method_params,
             }
 
         return _search_class(
@@ -176,7 +177,7 @@ class SAILAutoPipeline(SAILModel):
         else:
             raise TypeError(
                 "`pipeline_strategy` must be a None, str, "
-                f"or an instance of PipelineStrategy. Got {type(pipeline_strategy)}."
+                f"or an instance of PipelineStrategy. Got {pipeline_strategy.__module__}.{pipeline_strategy.__qualname__}. Set `None` to use the default."
             )
 
         return pipeline_strategy_class(

@@ -70,6 +70,10 @@ Examples and notebooks are located in the `examples` and `notebook` respectively
 pip install -e ".[examples]"
 ```
 
+## Recognition
+
+SAIL has been identified as innovations with market potential that can contribute to UN Sustainable Development Goals by the European Commission Innovation Radar. More details [here](https://innovation-radar.ec.europa.eu/innovation/46749).
+
 ## Acknowledgment
 
 This project has received funding from the European Union’s Horizon 2020 research and innovation programme under grant agreement No 957345 for MORE project.

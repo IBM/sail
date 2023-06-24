@@ -6,8 +6,9 @@ The library is for experimenting with streaming processing engines (SPEs) and in
 
 - Common interface for all incremental models available in libraries like Scikit-Learn, Pytorch, Keras and River.
 - Distributed computing for model selection, ensembling etc.
-- Hyperparameter optimization for incremental models (TODO).
+- Hyperparameter optimization for incremental models.
 - Interface and pipelines that implement incremental models for both offline and online learning.
+- A robust framework to construct an end-to- end AutoML pipeline with pipeline strategies that enables data ingestion, feature engineering, model selection, incremental training, and monitoring for data drifts on a streaming data.
 
 ## Documentation
 

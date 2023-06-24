@@ -14,11 +14,13 @@ The library is for experimenting with streaming processing engines (SPEs) and in
 
 See the [**SAIL Wiki**](https://github.com/IBM/sail/wiki) for full documentation, installation guide, operational details and other information.
 
-## SAIL Architecture
+## Architecture
+
+### SAIL Pipeline 
 
 ![Architecture](architecture.png)
 
-## SAIL Model Framework
+### SAIL Model Framework
 
 ![Architecture](model_framework.png)
 

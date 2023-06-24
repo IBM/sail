@@ -9,7 +9,7 @@ The library is for experimenting with streaming processing engines (SPEs) and in
 - Hyperparameter optimization for incremental models (TODO).
 - Interface and pipelines that implement incremental models for both offline and online learning.
 
-## Full Documentation
+## Documentation
 
 See the [**SAIL Wiki**](https://github.com/IBM/sail/wiki) for full documentation, installation guide, operational details and other information.
 

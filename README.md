@@ -13,6 +13,10 @@ The library is for experimenting with streaming processing engines (SPEs) and in
 
 ![Architecture](architecture.png)
 
+## SAIL Model Framework
+
+![Architecture](model_framework.png)
+
 ## Difference with River and other existing incremental machine learning libraries.
 
 Sail leverages the existing machine learning libraries like River, sklearn etc and creates a common set of APIs to run these models in the backend. In particular, while River provides minimal utilities for deep learning models, it does not focus on deep learning models developed through Pytorch and Keras. In addition, models in Sail are parallelized using Ray. The parallelization results in three major advatages that are particularly important for incremental models with high volume and high velocity data:

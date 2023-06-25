@@ -87,12 +87,18 @@ class PipelineStrategy:
     ]
 
     def __init__(
-        self, search_method, search_data_size, cumulative_scorer, drift_detector
+        self,
+        search_method,
+        search_data_size,
+        cumulative_scorer,
+        drift_detector,
+        incremental_training,
     ) -> None:
         self.search_method = search_method
         self.search_data_size = search_data_size
         self.cumulative_scorer = cumulative_scorer
         self.drift_detector = drift_detector
+        self.incremental_training = incremental_training
 
     def next(self, X, y=None, tune_params={}, **fit_params):
         if self.pipeline_actions.current_action == PipelineActionType.DATA_COLLECTION:
@@ -113,7 +119,13 @@ class PipelineStrategy:
             == PipelineActionType.SCORE_AND_DETECT_DRIFT
         ):
             self._cumulative_scoring(X, y)
+            if self.incremental_training:
+                self._incremental_train(X, y, **fit_params)
             self._detect_drift()
+        elif (
+            self.pipeline_actions.current_action == PipelineActionType.INCREMENTAL_TRAIN
+        ):
+            self._incremental_train(X, y, **fit_params)
         elif (
             self.pipeline_actions.current_action == PipelineActionType.PARTIAL_FIT_MODEL
         ):
@@ -162,6 +174,10 @@ class PipelineStrategy:
         del self.__dict__["_input_y"]
         self.pipeline_actions.next()
 
+    def _incremental_train(self, X, y, **fit_params):
+        LOGGER.info("Partially fitting best pipeline.")
+        self._best_pipeline.partial_fit(X, y, **fit_params)
+
     def _cumulative_scoring(self, X, y, sample_weight=1.0):
         y_preds = self._best_pipeline.predict(X)
 
@@ -179,3 +195,10 @@ class PipelineStrategy:
     def _fit_model(self, X, y, **fit_params):
         self._best_pipeline.fit_final_estimator(X, y, warm_start=False, **fit_params)
         self.pipeline_actions.next()
+
+    def _detect_drift(self):
+        value = self.cumulative_scorer.get()
+        self.drift_detector.update(value)
+        if self.drift_detector.drift_detected:
+            LOGGER.info("Drift Detected in the data.")
+            self.pipeline_actions.next()

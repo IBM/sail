@@ -1,10 +1,15 @@
 import importlib
-from typing import Type, Union
+import inspect
+import sys
+from typing import List, Type, Union
+
 import numpy as np
+import river
+from river import metrics
 from river.base import DriftDetector
 from river.drift import PageHinkley
 from sklearn.utils import check_array
-import river
+
 from sail.models.auto_ml.base_strategy import PipelineActionType, PipelineStrategy
 from sail.models.auto_ml.pipeline_strategy import DetectAndIncrement
 from sail.models.auto_ml.tune import SAILTuneGridSearchCV, SAILTuneSearchCV
@@ -23,7 +28,8 @@ class SAILAutoPipeline(SAILModel):
         search_method: Union[None, str] = None,
         search_method_params: dict = None,
         search_data_size: int = 1000,
-        scoring: str = "Accuracy",
+        incremental_training: bool = False,
+        scoring: Union[None, str, metrics.base.Metric] = None,
         drift_detector: Union[str, DriftDetector] = "auto",
         pipeline_strategy: Union[None, str] = None,
     ) -> None:
@@ -34,6 +40,7 @@ class SAILAutoPipeline(SAILModel):
         self.search_method = self._check_search_method(
             search_method, search_method_params, scoring
         )
+        self.incremental_training = incremental_training
         self.cumulative_scorer = self._check_scoring(scoring)
         self.drift_detector = self._check_drift_detector(drift_detector)
         self.pipeline_strategy = self.resolve_pipeline_strategy(pipeline_strategy)
@@ -92,14 +99,41 @@ class SAILAutoPipeline(SAILModel):
         return X, y
 
     def _check_scoring(self, scoring):
-        module = importlib.import_module("river.metrics")
+        if scoring is None:
+            return metrics.Accuracy()
         try:
-            _scoring_class = getattr(module, scoring)
-        except AttributeError:
-            raise Exception(
-                f"Method '{scoring}' is not available in river.metrics. Scoring must be one of the {river.metrics.__all__}."
+            if isinstance(scoring, str):
+                module = importlib.import_module("river.metrics")
+                _scoring_class = getattr(module, scoring)
+                return _scoring_class()
+            elif isinstance(scoring, metrics.base.Metric):
+                return scoring
+            elif inspect.isclass(scoring):
+                _scoring_class = scoring
+                valid_classes = [
+                    class_name
+                    for _, class_name in inspect.getmembers(
+                        sys.modules["river.metrics"], inspect.isclass
+                    )
+                ]
+                if _scoring_class in valid_classes:
+                    return _scoring_class()
+                else:
+                    raise Exception
+            else:
+                raise Exception
+
+        except:
+            method_name = (
+                scoring.__name__
+                if inspect.isclass(scoring)
+                else scoring
+                if isinstance(scoring, str)
+                else scoring.__class__.__name__
             )
-        return _scoring_class()
+            raise AttributeError(
+                f"Method '{method_name}' is not available in river.metrics. Scoring must be a str or an instance of the {river.metrics.__all__}."
+            )
 
     def _check_drift_detector(self, drift_detector) -> DriftDetector:
         if isinstance(drift_detector, DriftDetector):
@@ -185,10 +219,16 @@ class SAILAutoPipeline(SAILModel):
             self.search_data_size,
             self.cumulative_scorer,
             self.drift_detector,
+            incremental_training=self.incremental_training,
         )
 
     def train(self, X, y=None, **fit_params):
         X, y = self._validate_is_2darray(X, y)
+        # if self.incremental_training:
+        #     if not [param for param in fit_params if param.endswith("__classes")]:
+        #         raise Exception(
+        #             "If incremental training is enabled, train() must contain the classes parameter i.e. a list of all eligible classes. You can use the stepname__parameter format, e.g. `SAILAutoPipeline.train(X, y, classifier__classes=[1, 0])` where classifier is the stepname of the estimator."
+        #         )
         self.pipeline_strategy.next(X, y, **fit_params)
 
     def predict(self, X, **predict_params):

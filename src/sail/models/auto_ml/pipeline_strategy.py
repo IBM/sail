@@ -10,10 +10,15 @@ LOGGER = configure_logger()
 
 class DetectAndIncrement(PipelineStrategy):
     def __init__(
-        self, search_method, search_data_size, cumulative_scorer, drift_detector, *args
+        self,
+        search_method,
+        search_data_size,
+        cumulative_scorer,
+        drift_detector,
+        **kwargs,
     ) -> None:
         super(DetectAndIncrement, self).__init__(
-            search_method, search_data_size, cumulative_scorer, drift_detector
+            search_method, search_data_size, cumulative_scorer, drift_detector, **kwargs
         )
 
         # Add all pipeline actions
@@ -42,10 +47,15 @@ class DetectAndIncrement(PipelineStrategy):
 
 class DetectAndRetrain(PipelineStrategy):
     def __init__(
-        self, search_method, search_data_size, cumulative_scorer, drift_detector, *args
+        self,
+        search_method,
+        search_data_size,
+        cumulative_scorer,
+        drift_detector,
+        **kwargs,
     ) -> None:
         super(DetectAndRetrain, self).__init__(
-            search_method, search_data_size, cumulative_scorer, drift_detector
+            search_method, search_data_size, cumulative_scorer, drift_detector, **kwargs
         )
 
         # Add all pipeline actions
@@ -79,10 +89,10 @@ class DetectAndWarmStart(PipelineStrategy):
         search_data_size,
         cumulative_scorer,
         drift_detector,
-        *args,
+        **kwargs,
     ) -> None:
         super(DetectAndWarmStart, self).__init__(
-            search_method, search_data_size, cumulative_scorer, drift_detector
+            search_method, search_data_size, cumulative_scorer, drift_detector, **kwargs
         )
 
         # Add all pipeline actions
@@ -111,10 +121,15 @@ class DetectAndWarmStart(PipelineStrategy):
 
 class DetectAndRestart(PipelineStrategy):
     def __init__(
-        self, search_method, search_data_size, cumulative_scorer, drift_detector, *args
+        self,
+        search_method,
+        search_data_size,
+        cumulative_scorer,
+        drift_detector,
+        **kwargs,
     ) -> None:
         super(DetectAndRestart, self).__init__(
-            search_method, search_data_size, cumulative_scorer, drift_detector
+            search_method, search_data_size, cumulative_scorer, drift_detector, **kwargs
         )
 
         # Add all pipeline actions
@@ -142,10 +157,15 @@ class DetectAndRestart(PipelineStrategy):
 
 class PeriodicRestart(PipelineStrategy):
     def __init__(
-        self, search_method, search_data_size, cumulative_scorer, drift_detector, *args
+        self,
+        search_method,
+        search_data_size,
+        cumulative_scorer,
+        drift_detector,
+        **kwargs,
     ) -> None:
         super(PeriodicRestart, self).__init__(
-            search_method, search_data_size, cumulative_scorer, drift_detector
+            search_method, search_data_size, cumulative_scorer, drift_detector, **kwargs
         )
 
         # Add all pipeline actions

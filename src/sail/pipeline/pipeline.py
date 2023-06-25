@@ -94,10 +94,12 @@ class SAILPipeline(Pipeline):
                 )
             fit_params_last_step = fit_params_steps[self.steps[-1][0]]
             if (
-                "classes"
+                not hasattr(fit_params_last_step, "classes")
+                and "classes"
                 in inspect.getfullargspec(self._final_estimator.partial_fit).args
             ):
                 fit_params_last_step["classes"] = utils.multiclass.unique_labels(y)
+
             self._final_estimator.partial_fit(X, y, **fit_params_last_step)
         else:
             if not hasattr(self._final_estimator, "fit"):

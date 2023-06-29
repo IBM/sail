@@ -1,11 +1,16 @@
 import importlib
+import json
+import os
 import random
+import time
 import warnings
 from operator import *
 from typing import Dict, List
 
 import numpy as np
 from ray import tune
+from ray.tune.experiment import Trial
+from ray.tune.logger import LoggerCallback
 from ray.tune.search import BasicVariantGenerator, ConcurrencyLimiter, Searcher
 from ray.tune.search.bohb import TuneBOHB
 from ray.tune.search.hyperopt import HyperOptSearch
@@ -21,6 +26,9 @@ from tune_sklearn.utils import (
     check_is_pipeline,
     resolve_logger_callbacks,
 )
+
+os.environ["TUNE_DISABLE_AUTO_CALLBACK_LOGGERS"] = "1"
+os.environ["RAY_DEDUP_LOGS"] = "0"
 
 from sail.models.auto_ml.searcher import SailListSearcher, SailRandomListSearcher
 
@@ -61,7 +69,7 @@ class SAILTuneGridSearchCV(TuneGridSearchCV):
         "pipeline_auto_early_stop": False,
         "keep_best_configurations": 1,
     }
-    defined_loggers = ["csv", "mlflow", "json"]
+    defined_loggers = ["csv", "json"]
 
     def __init__(self, *args, keep_best_configurations=1, **kwargs):
         super(SAILTuneGridSearchCV, self).__init__(*args, **kwargs)
@@ -150,8 +158,8 @@ class SAILTuneGridSearchCV(TuneGridSearchCV):
             config=config,
             fail_fast="raise",
             resources_per_trial=resources_per_trial,
-            local_dir=self.local_dir,
-            name=self.name,
+            # local_dir=self.local_dir,
+            name="SAILAutoML_Experiment" + "_" + time.strftime("%d-%m-%Y_%H:%M:%S"),
             callbacks=resolve_logger_callbacks(self.loggers, self.defined_loggers),
             time_budget_s=self.time_budget_s,
             metric=self._metric_name,
@@ -185,6 +193,10 @@ class SAILTuneGridSearchCV(TuneGridSearchCV):
             )
 
         run_args = self._override_run_args_with_tune_params(run_args, tune_params)
+
+        # Currently, there is a bug where a tqdm progress instance is left unhandled during the Ray Tune. Hence, turning off the verbosity for `SAILPipeline`. This does not affect the Ray Tune logs which can be set via verbose field of tune.run.
+        for estimator in estimator_list:
+            estimator.log_verbose = 0
 
         trainable = tune.with_parameters(
             trainable,
@@ -492,6 +504,10 @@ class SAILTuneSearchCV(TuneSearchCV):
             run_args["search_alg"] = search_algo
 
         run_args = self._override_run_args_with_tune_params(run_args, tune_params)
+
+        # Currently, there is a bug where a tqdm progress instance is left unhandled during the Ray Tune. Hence, turning off the verbosity for `SAILPipeline`. This does not affect the Ray Tune logs which can be set via verbose field of tune.run.
+        for estimator in estimator_list:
+            estimator.log_verbose = 0
 
         trainable = tune.with_parameters(
             trainable, X=X, y=y, estimator_list=estimator_list, fit_params=fit_params

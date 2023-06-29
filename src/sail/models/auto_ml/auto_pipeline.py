@@ -1,20 +1,18 @@
 import importlib
-import inspect
-import sys
 from typing import List, Type, Union
 
 import numpy as np
-import river
-from river import metrics
-from river.base import DriftDetector
-from river.drift import PageHinkley
-from sklearn.utils import check_array
 
+
+from sklearn.utils import check_array
+import inspect
 from sail.models.auto_ml.base_strategy import PipelineActionType, PipelineStrategy
 from sail.models.auto_ml.pipeline_strategy import DetectAndIncrement
 from sail.models.auto_ml.tune import SAILTuneGridSearchCV, SAILTuneSearchCV
 from sail.models.base import SAILModel
 from sail.pipeline import SAILPipeline
+from river.base import DriftDetector
+from sail.drift_detection.drift_detector import SAILDriftDetector
 from sail.utils.logging import configure_logger
 
 LOGGER = configure_logger()
@@ -29,20 +27,17 @@ class SAILAutoPipeline(SAILModel):
         search_method_params: dict = None,
         search_data_size: int = 1000,
         incremental_training: bool = False,
-        scoring: Union[None, str, metrics.base.Metric] = None,
         drift_detector: Union[str, DriftDetector] = "auto",
         pipeline_strategy: Union[None, str] = None,
     ) -> None:
-        self.scoring = scoring
         self.pipeline = pipeline
         self.pipeline_params_grid = pipeline_params_grid
         self.search_data_size = search_data_size
         self.search_method = self._check_search_method(
-            search_method, search_method_params, scoring
+            search_method, search_method_params
         )
         self.incremental_training = incremental_training
-        self.cumulative_scorer = self._check_scoring(scoring)
-        self.drift_detector = self._check_drift_detector(drift_detector)
+        self.drift_detector = SAILDriftDetector(drift_detector)
         self.pipeline_strategy = self.resolve_pipeline_strategy(pipeline_strategy)
 
     @property
@@ -52,9 +47,9 @@ class SAILAutoPipeline(SAILModel):
         return None
 
     @property
-    def cumulative_score(self) -> float:
-        self.check_is_fitted("cumulative_score()")
-        return self.cumulative_scorer.get()
+    def progressive_score(self) -> float:
+        if self.check_is_fitted("progressive_score"):
+            return self.best_pipeline.progressive_score
 
     @property
     def cv_results(self):
@@ -73,8 +68,15 @@ class SAILAutoPipeline(SAILModel):
             pipeline_action.previous.action == PipelineActionType.SCORE_AND_DETECT_DRIFT
             and hasattr(self.pipeline_strategy, "_best_pipeline")
         ):
+            additional_msg = (
+                " Please note that input data of length {self.search_data_size} is required to begin new parameter search."
+                if self.pipeline_strategy
+                in ["DetectAndWarmStart", "DetectAndRestart", "PrequentialTraining"]
+                else ""
+            )
             LOGGER.warning(
-                f"The current best pipeline is STALE. Pipeline becomes stale when data drift occurs. You can call 'partial_fit' with fresh data to get the best pipeline. Please note that input data of length {self.search_data_size} is required to begin new parameter search."
+                f"The current best pipeline is STALE. Pipeline becomes stale when data drift occurs. You can call 'train' with fresh data to get the best pipeline."
+                + additional_msg
             )
             fitted = True
         elif not hasattr(self.pipeline_strategy, "_best_pipeline"):
@@ -98,65 +100,7 @@ class SAILAutoPipeline(SAILModel):
 
         return X, y
 
-    def _check_scoring(self, scoring):
-        if scoring is None:
-            return metrics.Accuracy()
-        try:
-            if isinstance(scoring, str):
-                module = importlib.import_module("river.metrics")
-                _scoring_class = getattr(module, scoring)
-                return _scoring_class()
-            elif isinstance(scoring, metrics.base.Metric):
-                return scoring
-            elif inspect.isclass(scoring):
-                _scoring_class = scoring
-                valid_classes = [
-                    class_name
-                    for _, class_name in inspect.getmembers(
-                        sys.modules["river.metrics"], inspect.isclass
-                    )
-                ]
-                if _scoring_class in valid_classes:
-                    return _scoring_class()
-                else:
-                    raise Exception
-            else:
-                raise Exception
-
-        except:
-            method_name = (
-                scoring.__name__
-                if inspect.isclass(scoring)
-                else scoring
-                if isinstance(scoring, str)
-                else scoring.__class__.__name__
-            )
-            raise AttributeError(
-                f"Method '{method_name}' is not available in river.metrics. Scoring must be a str or an instance of the {river.metrics.__all__}."
-            )
-
-    def _check_drift_detector(self, drift_detector) -> DriftDetector:
-        if isinstance(drift_detector, DriftDetector):
-            return drift_detector
-        elif isinstance(drift_detector, str):
-            if drift_detector == "auto":
-                _drift_detector_class = PageHinkley
-            elif isinstance(drift_detector, str):
-                module = importlib.import_module("river.drift")
-                try:
-                    _drift_detector_class = getattr(module, drift_detector)
-                except AttributeError:
-                    raise Exception(
-                        f"Drift Detector '{drift_detector}' is not available in River. Available drift detectors: {river.drift.__all__}"
-                    )
-        else:
-            raise TypeError(
-                "`drift_detector` must be an instance or str from "
-                f"{river.drift.__all__} from river.drift module. Got {drift_detector.__module__}.{drift_detector.__qualname__}. Set `auto` to use the default."
-            )
-        return _drift_detector_class()
-
-    def _check_search_method(self, search_method, search_method_params, scoring):
+    def _check_search_method(self, search_method, search_method_params):
         if search_method is None:
             _search_class = SAILTuneGridSearchCV
         elif Type[search_method] in [
@@ -188,7 +132,9 @@ class SAILAutoPipeline(SAILModel):
             }
 
         return _search_class(
-            self.pipeline, self.pipeline_params_grid, **search_method_params
+            estimator=self.pipeline,
+            param_grid=self.pipeline_params_grid,
+            **search_method_params,
         )
 
     def resolve_pipeline_strategy(self, pipeline_strategy):
@@ -217,7 +163,6 @@ class SAILAutoPipeline(SAILModel):
         return pipeline_strategy_class(
             self.search_method,
             self.search_data_size,
-            self.cumulative_scorer,
             self.drift_detector,
             incremental_training=self.incremental_training,
         )
@@ -236,14 +181,6 @@ class SAILAutoPipeline(SAILModel):
             X, _ = self._validate_is_2darray(X)
             return self.best_pipeline.predict(X, **predict_params)
 
-    def score(self, X, y=None, sample_weight=1.0):
+    def score(self, X, y=None, sample_weight=1.0) -> float:
         if self.check_is_fitted("score()"):
-            X, y = self._validate_is_2darray(X, y)
-            y_preds = self.predict(X)
-
-            scoring_metric = self._check_scoring(self.scoring)
-            for v1, v2 in zip(y, y_preds):
-                scoring_metric.update(v1, v2, sample_weight)
-
-            score = scoring_metric.get()
-            return score
+            return self.best_pipeline.score(X, y, sample_weight)

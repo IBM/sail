@@ -1,16 +1,41 @@
+from tabnanny import verbose
+import time
 from abc import ABC
 from enum import Enum, auto
+from time import sleep
 from typing import Union
-import time
+
 import numpy as np
+import ray
 from ray import tune
 from ray.air import Checkpoint, session
 from ray.air.config import CheckpointConfig, RunConfig, ScalingConfig
 from ray.tune.sklearn import TuneGridSearchCV, TuneSearchCV
-
+from threading import Thread
 from sail.utils.logging import configure_logger
+from sail.utils.progress_bar import SAILProgressBar
+from threading import Event
 
 LOGGER = configure_logger()
+
+
+def start_progress(params, event):
+    progress = SAILProgressBar(
+        steps=100,
+        desc=f"SAIL Pipeline Tuning in progress...",
+        params=params,
+        format="tuning",
+        verbose=1,
+    )
+
+    while True:
+        progress.update()
+        sleep(0.1)
+        # check for stop
+        if event.is_set():
+            progress.finish()
+            progress.close()
+            break
 
 
 class PipelineActionType(Enum):
@@ -90,15 +115,18 @@ class PipelineStrategy:
         self,
         search_method,
         search_data_size,
-        cumulative_scorer,
         drift_detector,
         incremental_training,
     ) -> None:
         self.search_method = search_method
         self.search_data_size = search_data_size
-        self.cumulative_scorer = cumulative_scorer
         self.drift_detector = drift_detector
         self.incremental_training = incremental_training
+
+    def action_separator(self):
+        print(
+            ">>>--------------------------------------------------------------------------------------------"
+        )
 
     def next(self, X, y=None, tune_params={}, **fit_params):
         if self.pipeline_actions.current_action == PipelineActionType.DATA_COLLECTION:
@@ -118,19 +146,27 @@ class PipelineStrategy:
             self.pipeline_actions.current_action
             == PipelineActionType.SCORE_AND_DETECT_DRIFT
         ):
-            self._cumulative_scoring(X, y)
+            self.action_separator()
+            y_preds = self._best_pipeline.predict(X)
             if self.incremental_training:
+                self._best_pipeline.progressive_score
+            else:
+                self._best_pipeline.score(X, y)
+
+            if not self._detect_drift(y_preds, y) and self.incremental_training:
                 self._incremental_train(X, y, **fit_params)
-            self._detect_drift()
         elif (
             self.pipeline_actions.current_action == PipelineActionType.INCREMENTAL_TRAIN
         ):
+            self.action_separator()
             self._incremental_train(X, y, **fit_params)
         elif (
             self.pipeline_actions.current_action == PipelineActionType.PARTIAL_FIT_MODEL
         ):
+            self.action_separator()
             self._partial_fit_model(X, y, **fit_params)
         elif self.pipeline_actions.current_action == PipelineActionType.FIT_MODEL:
+            self.action_separator()
             self._fit_model(X, y, **fit_params)
 
     def _collect_data_for_parameter_tuning(self, X, y):
@@ -152,15 +188,33 @@ class PipelineStrategy:
             self.pipeline_actions.next()
 
     def _find_best_pipeline(self, tune_params={}, warm_start=False, **fit_params):
-        LOGGER.info(f"Pipeline tuning using {self.search_method.__class__}")
+        class_name = (
+            self.search_method.__class__.__module__
+            + "."
+            + self.search_method.__class__.__qualname__
+        )
+        LOGGER.info(f"Starting Pipeline tuning with {class_name}")
         tune_params.update(
             {
-                "name": "SAILAutoML_Experiment"
-                + "_"
-                + time.strftime("%d-%m-%Y_%H:%M:%S"),
                 "trial_dirname_creator": lambda trial: f"Trail_{trial.trial_id}",
             }
         )
+        ray.init()
+        resources = ray.cluster_resources()
+        event = Event()
+        params = {
+            "CPU": resources["CPU"],
+            "Memory": resources["memory"] / (1024 * 1024 * 1024),
+            "Class": self.search_method.__class__.__qualname__,
+        }
+        thread = Thread(
+            target=start_progress,
+            args=(
+                params,
+                event,
+            ),
+        )
+        thread.start()
         fit_result = self.search_method.fit(
             X=self._input_X,
             y=self._input_y,
@@ -168,37 +222,33 @@ class PipelineStrategy:
             tune_params=tune_params,
             **fit_params,
         )
+        event.set()
+        thread.join()
+        LOGGER.info("Pipeline tuning completed. Shutting down Ray cluster...")
+        ray.shutdown()
         self._fit_result = fit_result
+        LOGGER.info(f"Found best params: {fit_result.best_params}")
         self._best_pipeline = fit_result.best_estimator_
+        self._best_pipeline.log_verbose = 1
         del self.__dict__["_input_X"]
         del self.__dict__["_input_y"]
         self.pipeline_actions.next()
 
     def _incremental_train(self, X, y, **fit_params):
-        LOGGER.info("Partially fitting best pipeline.")
+        LOGGER.debug("Partially fitting best pipeline.")
         self._best_pipeline.partial_fit(X, y, **fit_params)
 
-    def _cumulative_scoring(self, X, y, sample_weight=1.0):
-        y_preds = self._best_pipeline.predict(X)
-
-        # Cumulative scoring
-        for v1, v2 in zip(y, y_preds):
-            self.cumulative_scorer.update(v1, v2, sample_weight)
-
-        score = self.cumulative_scorer.get()
-        LOGGER.info(f"Cumulative Pipeline Score: {score}")
-
     def _partial_fit_model(self, X, y, **fit_params):
-        self._best_pipeline.fit_final_estimator(X, y, warm_start=True, **fit_params)
+        self._best_pipeline.fit_final_estimator(
+            X, y, warm_start=True, verbose=1, **fit_params
+        )
         self.pipeline_actions.next()
 
     def _fit_model(self, X, y, **fit_params):
         self._best_pipeline.fit_final_estimator(X, y, warm_start=False, **fit_params)
         self.pipeline_actions.next()
 
-    def _detect_drift(self):
-        value = self.cumulative_scorer.get()
-        self.drift_detector.update(value)
-        if self.drift_detector.drift_detected:
+    def _detect_drift(self, y_preds, y_true):
+        if self.drift_detector.detect_drift(y_preds, y_true):
             LOGGER.info("Drift Detected in the data.")
             self.pipeline_actions.next()

@@ -1,7 +1,7 @@
 import importlib
 import inspect
 import sys
-
+import copy
 import river
 from river import metrics
 
@@ -18,26 +18,6 @@ class SAILModelScorer:
     @property
     def progressive_score(self):
         return self._scorer.get()
-
-    def score(self, y_preds, y_true, sample_weight=1.0, verbose=1):
-        desc_type = "Pipeline" if self.is_pipeline else "Model"
-        with SAILProgressBar(
-            steps=len(y_preds),
-            desc=f"SAIL {desc_type} Score",
-            params={
-                "Metric": self._scorer.__class__.__qualname__,
-                "Batch Size": len(y_preds),
-                "Score": "Calculating...",
-            },
-            format="scoring",
-            verbose=verbose,
-        ) as progress:
-            scorer = self._resolve_scoring(self.scoring, self.estimator)
-            for v1, v2 in zip(y_true, y_preds):
-                scorer.update(v1, v2, sample_weight)
-                progress.update()
-            progress.update_params("Score", scorer.get())
-        return scorer.get()
 
     def get_default_scorer(self, estimator_type):
         if estimator_type == "classifier":
@@ -94,11 +74,50 @@ class SAILModelScorer:
                 f"Method '{method_name}' is not available in river.metrics. Scoring must be a str or an instance of the {river.metrics.__all__}."
             )
 
-    def _eval_progressive_score(self, y_preds, y_true, sample_weight=1.0):
-        for v1, v2 in zip(y_true, y_preds):
-            self._scorer.update(v1, v2, sample_weight)
+    def score(self, y_preds, y_true, sample_weight=1.0, verbose=1):
+        desc_type = "Pipeline" if self.is_pipeline else "Model"
+        with SAILProgressBar(
+            steps=len(y_preds),
+            desc=f"SAIL {desc_type} Score",
+            params={
+                "Metric": self._scorer.__class__.__qualname__,
+                "Batch Size": len(y_preds),
+                "Score": "Calculating...",
+            },
+            format="scoring",
+            verbose=verbose,
+        ) as progress:
+            scorer = self._resolve_scoring(self.scoring, self.estimator)
+            for v1, v2 in zip(y_true, y_preds):
+                scorer.update(v1, v2, sample_weight)
+                progress.update()
+            progress.update_params("Score", scorer.get())
+        return scorer.get()
 
-        return self._scorer.get()
+    def _eval_progressive_score(
+        self, y_preds, y_true, sample_weight=1.0, detached=False, verbose=1
+    ):
+        desc_type = "Pipeline" if self.is_pipeline else "Model"
+        with SAILProgressBar(
+            steps=len(y_preds),
+            desc=f"SAIL {desc_type} Progressive Score",
+            params={
+                "Metric": self._scorer.__class__.__qualname__,
+                "Batch Size": len(y_preds),
+                "Score": self._scorer.get(),
+            },
+            format="scoring",
+            verbose=verbose,
+        ) as progress:
+            if detached:
+                scorer = copy.deepcopy(self._scorer)
+            else:
+                scorer = self._scorer
+            for v1, v2 in zip(y_true, y_preds):
+                scorer.update(v1, v2, sample_weight)
+                progress.update()
+            progress.update_params("Score", scorer.get())
+        return scorer.get()
 
     def clear(self):
         self._scorer = self._resolve_scoring()

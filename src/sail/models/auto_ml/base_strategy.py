@@ -41,11 +41,11 @@ def start_progress(params, event):
 class PipelineActionType(Enum):
     DATA_COLLECTION = auto()
     FIND_BEST_PIPELINE = auto()
+    WARM_START_FIND_BEST_PIPELINE = auto()
     SCORE_AND_DETECT_DRIFT = auto()
     FIT_MODEL = auto()
     PARTIAL_FIT_MODEL = auto()
-    INCREMENTAL_TRAIN = auto()
-    PARTIAL_FIT_BEST_PIPELINE = auto()
+    PARTIAL_FIT_PIPELINE = auto()
 
 
 class PipelineAction:
@@ -139,7 +139,7 @@ class PipelineStrategy:
             self._find_best_pipeline(**fit_params)
         elif (
             self.pipeline_actions.current_action
-            == PipelineActionType.PARTIAL_FIT_BEST_PIPELINE
+            == PipelineActionType.WARM_START_FIND_BEST_PIPELINE
         ):
             self._find_best_pipeline(warm_start=True, **fit_params)
         elif (
@@ -149,21 +149,29 @@ class PipelineStrategy:
             self.action_separator()
             y_preds = self._best_pipeline.predict(X)
             if self.incremental_training:
-                self._best_pipeline.progressive_score
+                self._best_pipeline._scorer._eval_progressive_score(
+                    y_preds, y, detached=True
+                )
             else:
                 self._best_pipeline.score(X, y)
 
             if not self._detect_drift(y_preds, y) and self.incremental_training:
-                self._incremental_train(X, y, **fit_params)
+                self._partial_fit_pipeline(X, y, **fit_params)
         elif (
-            self.pipeline_actions.current_action == PipelineActionType.INCREMENTAL_TRAIN
+            self.pipeline_actions.current_action
+            == PipelineActionType.PARTIAL_FIT_PIPELINE
         ):
             self.action_separator()
-            self._incremental_train(X, y, **fit_params)
+            self._partial_fit_pipeline(X, y, **fit_params)
         elif (
             self.pipeline_actions.current_action == PipelineActionType.PARTIAL_FIT_MODEL
         ):
             self.action_separator()
+            if self.incremental_training:
+                y_preds = self._best_pipeline.predict(X)
+                self._best_pipeline._scorer._eval_progressive_score(
+                    y_preds, y, verbose=0
+                )
             self._partial_fit_model(X, y, **fit_params)
         elif self.pipeline_actions.current_action == PipelineActionType.FIT_MODEL:
             self.action_separator()
@@ -234,7 +242,7 @@ class PipelineStrategy:
         del self.__dict__["_input_y"]
         self.pipeline_actions.next()
 
-    def _incremental_train(self, X, y, **fit_params):
+    def _partial_fit_pipeline(self, X, y, **fit_params):
         LOGGER.debug("Partially fitting best pipeline.")
         self._best_pipeline.partial_fit(X, y, **fit_params)
 

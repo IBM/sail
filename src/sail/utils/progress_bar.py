@@ -2,7 +2,8 @@ from tqdm import tqdm
 
 
 BAR_FORMAT = {
-    "training": "{desc}: {percentage:3.0f}%{bar} [Steps: {n_fmt}/{total_fmt}, ETA: {elapsed}<{remaining}, Elapsed:{elapsed_s:3.3f}s{postfix}]",
+    "pipeline_training": "{desc}: {percentage:3.0f}%{bar} [Steps: {n_fmt}/{total_fmt}, ETA: {elapsed}<{remaining}, Elapsed:{elapsed_s:3.3f}s{postfix}]",
+    "model_training": "{desc}: {percentage:3.0f}%{bar} [ETA: {elapsed}<{remaining}, Elapsed:{elapsed_s:3.3f}s{postfix}]",
     "scoring": "{desc}: {percentage:3.0f}%{bar} [Points: {n_fmt}/{total_fmt}, Elapsed:{elapsed_s:3.4f}s{postfix}]",
     "tuning": "{desc} [Elapsed: {elapsed_s:3.2f}s{postfix}]",
     "progressive_score": "{desc} [Elapsed: {elapsed_s:3.5f}s{postfix}]",

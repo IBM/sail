@@ -1,5 +1,6 @@
 import os
 import shutil
+from tabnanny import verbose
 import uuid
 from typing import Any, List, Tuple
 from networkx import watts_strogatz_graph
@@ -38,23 +39,10 @@ class SAILPipeline(Pipeline):
             scoring=scoring, estimator=steps[-1][1], is_pipeline=True
         )
         self.log_verbose = verbose
-        LOGGER.debug("Created SAILPipeline object with ID %s", self._uuid)
 
     @property
-    def progressive_score(self, verbose=1):
-        with SAILProgressBar(
-            steps=1,
-            desc=f"SAIL Pipeline Progressive Score",
-            params={
-                "Metric": self._scorer._scorer.__class__.__qualname__,
-                "Score": self._scorer.progressive_score,
-            },
-            format="progressive_score",
-            verbose=verbose,
-        ) as progress:
-            score = self._scorer.progressive_score
-            progress.update()
-        return score
+    def progressive_score(self):
+        return self._scorer.progressive_score
 
     def score(self, X, y, sample_weight=1.0):
         y_preds = self.predict(X)
@@ -67,7 +55,7 @@ class SAILPipeline(Pipeline):
     def partial_fit(self, X, y=None, **fit_params):
         if self.__sklearn_is_fitted__():
             y_preds = self.predict(X)
-            self._scorer._eval_progressive_score(y_preds, y)
+            self._scorer._eval_progressive_score(y_preds, y, verbose=0)
         self._fit(X, y, warm_start=True, **fit_params)
 
     def _fit(self, X, y=None, warm_start=None, **fit_params):
@@ -96,9 +84,8 @@ class SAILPipeline(Pipeline):
             desc=f"SAIL Pipeline Partial fit" if warm_start else f"SAIL Pipeline fit",
             params={
                 "Batch Size": X.shape[0],
-                "Score": self._scorer.progressive_score,
             },
-            format="training",
+            format="pipeline_training",
             verbose=self.log_verbose,
         ) as progress:
             for step_idx, name, transformer in self._iter(
@@ -142,6 +129,8 @@ class SAILPipeline(Pipeline):
             # update score for fit() call.
             if not warm_start:
                 progress.update_params("Score", self.score(Xh, yh))
+            else:
+                progress.update_params("P_Score", self.progressive_score)
 
         return self
 
@@ -152,10 +141,10 @@ class SAILPipeline(Pipeline):
             steps=1,
             desc=f"SAIL Model Partial fit" if warm_start else f"SAIL Model fit",
             params={
+                "Model": self.steps[-1][1].__class__.__name__,
                 "Batch Size": X.shape[0],
-                "Score": self._scorer.progressive_score,
             },
-            format="training",
+            format="model_training",
             verbose=verbose,
         ) as progress:
             if self.steps[-1][0] in fit_params_steps:
@@ -170,6 +159,7 @@ class SAILPipeline(Pipeline):
                     )
                 self._final_estimator.partial_fit(X, y, **fit_params_last_step)
                 progress.update()
+                progress.update_params("P_Score", self.progressive_score)
             else:
                 if not hasattr(self._final_estimator, "fit"):
                     raise AttributeError(

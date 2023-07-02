@@ -71,9 +71,20 @@ class SAILTuneGridSearchCV(TuneGridSearchCV):
     }
     defined_loggers = ["csv", "json"]
 
-    def __init__(self, *args, keep_best_configurations=1, **kwargs):
+    def __init__(
+        self,
+        *args,
+        num_cpus_per_trial=1,
+        num_gpus_per_trial=0,
+        keep_best_configurations=1,
+        **kwargs,
+    ):
         super(SAILTuneGridSearchCV, self).__init__(*args, **kwargs)
         self.keep_best_configurations = keep_best_configurations
+        self.resources_per_trial = {
+            "cpu": num_cpus_per_trial,
+            "gpu": num_gpus_per_trial,
+        }
 
     def fit(
         self, X, y=None, warm_start=False, groups=None, tune_params=None, **fit_params
@@ -81,14 +92,18 @@ class SAILTuneGridSearchCV(TuneGridSearchCV):
         self.warm_start = warm_start
         return super().fit(X, y, groups, tune_params, **fit_params)
 
-    def _list_grid_num_samples(self):
+    def _list_grid_num_samples(self, warm_start):
         """Calculate the num_samples for `tune.run`.
 
         This is used when a list of dictionaries is passed in
         for the `param_grid`
         """
         num_samples = 0
-        if hasattr(self, "_best_configurations") and self._best_configurations:
+        if (
+            warm_start
+            and hasattr(self, "_best_configurations")
+            and self._best_configurations
+        ):
             num_samples = len(self._best_configurations)
         return num_samples + len(list(ParameterGrid(self.param_grid)))
 
@@ -157,9 +172,10 @@ class SAILTuneGridSearchCV(TuneGridSearchCV):
             stop=stopper,
             config=config,
             fail_fast="raise",
-            resources_per_trial=resources_per_trial,
+            resources_per_trial=self.resources_per_trial,
             # local_dir=self.local_dir,
-            name="SAILAutoML_Experiment" + "_" + time.strftime("%d-%m-%Y_%H:%M:%S"),
+            trial_dirname_creator=lambda trial: f"Trail_{trial.trial_id}",
+            name=self.name,
             callbacks=resolve_logger_callbacks(self.loggers, self.defined_loggers),
             time_budget_s=self.time_budget_s,
             metric=self._metric_name,
@@ -177,7 +193,7 @@ class SAILTuneGridSearchCV(TuneGridSearchCV):
                     search_alg=SailListSearcher(
                         self.param_grid, points_to_evaluate=best_configurations
                     ),
-                    num_samples=self._list_grid_num_samples(),
+                    num_samples=self._list_grid_num_samples(self.warm_start),
                 )
             )
         else:
@@ -194,7 +210,7 @@ class SAILTuneGridSearchCV(TuneGridSearchCV):
 
         run_args = self._override_run_args_with_tune_params(run_args, tune_params)
 
-        # Currently, there is a bug where a tqdm progress instance is left unhandled during the Ray Tune. Hence, turning off the verbosity for `SAILPipeline`. This does not affect the Ray Tune logs which can be set via verbose field of tune.run.
+        # Currently, there is a bug where a tqdm logger instance is left unhandled during the Ray Tune. Also, it is an overkill to log Pipeline Training for Distributed Cross Validation. Hence, turning off the verbosity for `SAILPipeline`. This does not affect the Ray Tune logs which can be set via verbose field of tune.run.
         for estimator in estimator_list:
             estimator.log_verbose = 0
 
@@ -505,7 +521,7 @@ class SAILTuneSearchCV(TuneSearchCV):
 
         run_args = self._override_run_args_with_tune_params(run_args, tune_params)
 
-        # Currently, there is a bug where a tqdm progress instance is left unhandled during the Ray Tune. Hence, turning off the verbosity for `SAILPipeline`. This does not affect the Ray Tune logs which can be set via verbose field of tune.run.
+        # Currently, there is a bug where a tqdm logger instance is left unhandled during the Ray Tune. Also, it is an overkill to log Pipeline Training for Distributed Cross Validation. Hence, turning off the verbosity for `SAILPipeline`. This does not affect the Ray Tune logs which can be set via verbose field of tune.run.
         for estimator in estimator_list:
             estimator.log_verbose = 0
 

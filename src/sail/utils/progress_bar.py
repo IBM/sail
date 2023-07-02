@@ -1,5 +1,10 @@
-from tqdm import tqdm
+import os
+from threading import Thread
+from time import sleep
+from typing import Any
 
+import ray
+from tqdm import tqdm
 
 BAR_FORMAT = {
     "pipeline_training": "{desc}: {percentage:3.0f}%{bar} [Steps: {n_fmt}/{total_fmt}, ETA: {elapsed}<{remaining}, Elapsed:{elapsed_s:3.3f}s{postfix}]",
@@ -61,3 +66,73 @@ class SAILProgressBar:
     def close(self):
         if self.check_verbosity():
             self.pbar.close()
+
+
+class SailTuningProgressBar(Thread):
+    def __init__(self, search_method, warm_start) -> None:
+        Thread.__init__(self)
+        self.search_method = search_method
+        self.num_trails = (
+            search_method._list_grid_num_samples(warm_start)
+            if isinstance(search_method.param_grid, list)
+            else 0
+        )
+        self.exp_dir = os.path.expanduser(
+            os.path.join(search_method.local_dir, search_method.name)
+        )
+        self.is_running = False
+
+    def run(self):
+        self.is_running = True
+        resources = ray.cluster_resources()
+        params = {
+            "Trials": "Running",
+            "Class": self.search_method.__class__.__qualname__,
+            "CPU": int(resources["CPU"] / self.search_method.resources_per_trial["cpu"])
+            * self.search_method.resources_per_trial["cpu"],
+            "GPU": self.search_method.resources_per_trial["gpu"],
+            "Cluster Memory": str(
+                format(resources["memory"] / (1024 * 1024 * 1024), ".2f")
+            )
+            + " GB",
+        }
+
+        progress = SAILProgressBar(
+            steps=1,
+            desc=f"SAIL Pipeline Tuning in progress...",
+            params=params,
+            format="tuning",
+            verbose=1,
+        )
+
+        while True:
+            progress.update()
+            trial_terminated = []
+            do_not_update = False
+            try:
+                for dir in os.listdir(self.exp_dir):
+                    if dir not in trial_terminated:
+                        file_path = self.exp_dir + "/" + dir + "/result.json"
+                        if os.path.exists(file_path) and os.path.getsize(file_path) > 0:
+                            trial_terminated.append(dir)
+            except Exception as e:
+                do_not_update = True
+
+            if not do_not_update:
+                if self.num_trails > 0:
+                    progress.update_params(
+                        "Trials", f"{len(trial_terminated)}/{self.num_trails}"
+                    )
+                else:
+                    progress.update_params("Trials", f"{len(trial_terminated)}")
+
+            if not self.is_running:
+                if do_not_update:
+                    progress.update_params("Trials", "TERMINATED")
+
+                progress.finish()
+                progress.close()
+                break
+
+    def stop(self):
+        self.is_running = False

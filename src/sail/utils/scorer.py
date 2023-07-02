@@ -82,7 +82,6 @@ class SAILModelScorer:
             params={
                 "Metric": self._scorer.__class__.__qualname__,
                 "Batch Size": len(y_preds),
-                "Score": "Calculating...",
             },
             format="scoring",
             verbose=verbose,
@@ -104,7 +103,6 @@ class SAILModelScorer:
             params={
                 "Metric": self._scorer.__class__.__qualname__,
                 "Batch Size": len(y_preds),
-                "Score": self._scorer.get(),
             },
             format="scoring",
             verbose=verbose,
@@ -116,7 +114,7 @@ class SAILModelScorer:
             for v1, v2 in zip(y_true, y_preds):
                 scorer.update(v1, v2, sample_weight)
                 progress.update()
-            progress.update_params("Score", scorer.get())
+            progress.update_params("P_Score", scorer.get())
         return scorer.get()
 
     def clear(self):

@@ -1,10 +1,11 @@
 from tabnanny import verbose
 import time
+import os
 from abc import ABC
 from enum import Enum, auto
 from time import sleep
 from typing import Union
-
+import requests
 import numpy as np
 import ray
 from ray import tune
@@ -13,29 +14,10 @@ from ray.air.config import CheckpointConfig, RunConfig, ScalingConfig
 from ray.tune.sklearn import TuneGridSearchCV, TuneSearchCV
 from threading import Thread
 from sail.utils.logging import configure_logger
-from sail.utils.progress_bar import SAILProgressBar
+from sail.utils.progress_bar import SAILProgressBar, SailTuningProgressBar
 from threading import Event
 
 LOGGER = configure_logger()
-
-
-def start_progress(params, event):
-    progress = SAILProgressBar(
-        steps=100,
-        desc=f"SAIL Pipeline Tuning in progress...",
-        params=params,
-        format="tuning",
-        verbose=1,
-    )
-
-    while True:
-        progress.update()
-        sleep(0.1)
-        # check for stop
-        if event.is_set():
-            progress.finish()
-            progress.close()
-            break
 
 
 class PipelineActionType(Enum):
@@ -109,6 +91,7 @@ class PipelineStrategy:
         "DetectAndWarmStart",
         "DetectAndRestart",
         "PeriodicRestart",
+        "PrequentialTraining",
     ]
 
     def __init__(
@@ -149,13 +132,13 @@ class PipelineStrategy:
             self.action_separator()
             y_preds = self._best_pipeline.predict(X)
             if self.incremental_training:
-                self._best_pipeline._scorer._eval_progressive_score(
+                score = self._best_pipeline._scorer._eval_progressive_score(
                     y_preds, y, detached=True
                 )
             else:
-                self._best_pipeline.score(X, y)
+                score = self._best_pipeline.score(X, y)
 
-            if not self._detect_drift(y_preds, y) and self.incremental_training:
+            if not self._detect_drift(score, y_preds, y) and self.incremental_training:
                 self._partial_fit_pipeline(X, y, **fit_params)
         elif (
             self.pipeline_actions.current_action
@@ -167,14 +150,19 @@ class PipelineStrategy:
             self.pipeline_actions.current_action == PipelineActionType.PARTIAL_FIT_MODEL
         ):
             self.action_separator()
-            if self.incremental_training:
-                y_preds = self._best_pipeline.predict(X)
-                self._best_pipeline._scorer._eval_progressive_score(
-                    y_preds, y, verbose=0
-                )
+            # if self.incremental_training:
+            #     y_preds = self._best_pipeline.predict(X)
+            #     self._best_pipeline._scorer._eval_progressive_score(
+            #         y_preds, y, verbose=0
+            #     )
             self._partial_fit_model(X, y, **fit_params)
         elif self.pipeline_actions.current_action == PipelineActionType.FIT_MODEL:
             self.action_separator()
+            # if self.incremental_training:
+            #     y_preds = self._best_pipeline.predict(X)
+            #     self._best_pipeline._scorer._eval_progressive_score(
+            #         y_preds, y, verbose=0
+            #     )
             self._fit_model(X, y, **fit_params)
 
     def _collect_data_for_parameter_tuning(self, X, y):
@@ -202,36 +190,26 @@ class PipelineStrategy:
             + self.search_method.__class__.__qualname__
         )
         LOGGER.info(f"Starting Pipeline tuning with {class_name}")
-        tune_params.update(
-            {
-                "trial_dirname_creator": lambda trial: f"Trail_{trial.trial_id}",
-            }
+        self.search_method.name = (
+            "SAILAutoML_Experiment" + "_" + time.strftime("%d-%m-%Y_%H:%M:%S")
         )
         ray.init()
-        resources = ray.cluster_resources()
-        event = Event()
-        params = {
-            "CPU": resources["CPU"],
-            "Memory": resources["memory"] / (1024 * 1024 * 1024),
-            "Class": self.search_method.__class__.__qualname__,
-        }
-        thread = Thread(
-            target=start_progress,
-            args=(
-                params,
-                event,
-            ),
+        progress_bar = SailTuningProgressBar(
+            search_method=self.search_method, warm_start=warm_start
         )
-        thread.start()
-        fit_result = self.search_method.fit(
-            X=self._input_X,
-            y=self._input_y,
-            warm_start=warm_start,
-            tune_params=tune_params,
-            **fit_params,
-        )
-        event.set()
-        thread.join()
+        progress_bar.start()
+        try:
+            fit_result = self.search_method.fit(
+                X=self._input_X,
+                y=self._input_y,
+                warm_start=warm_start,
+                tune_params=tune_params,
+                **fit_params,
+            )
+        finally:
+            progress_bar.stop()
+            progress_bar.join()
+
         LOGGER.info("Pipeline tuning completed. Shutting down Ray cluster...")
         ray.shutdown()
         self._fit_result = fit_result
@@ -253,10 +231,12 @@ class PipelineStrategy:
         self.pipeline_actions.next()
 
     def _fit_model(self, X, y, **fit_params):
-        self._best_pipeline.fit_final_estimator(X, y, warm_start=False, **fit_params)
+        self._best_pipeline.fit_final_estimator(
+            X, y, warm_start=False, verbose=1, **fit_params
+        )
         self.pipeline_actions.next()
 
-    def _detect_drift(self, y_preds, y_true):
-        if self.drift_detector.detect_drift(y_preds, y_true):
+    def _detect_drift(self, *args):
+        if self.drift_detector.detect_drift(*args):
             LOGGER.info("Drift Detected in the data.")
             self.pipeline_actions.next()

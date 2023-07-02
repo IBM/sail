@@ -34,8 +34,8 @@ class DetectAndIncrement(PipelineStrategy):
             f"Pipeline Strategy [{self.__class__.__name__}] created with actions: {self.pipeline_actions.get_actions()}"
         )
 
-    def _detect_drift(self, y_preds, y_true):
-        if self.drift_detector.detect_drift(y_preds, y_true):
+    def _detect_drift(self, *args):
+        if self.drift_detector.detect_drift(*args):
             LOGGER.info(
                 "Drift Detected in the data. Final Estimator will be incrementally trained on the next train()"
             )
@@ -70,8 +70,8 @@ class DetectAndRetrain(PipelineStrategy):
             f"Pipeline Strategy [{self.__class__.__name__}] created with actions: {self.pipeline_actions.get_actions()}"
         )
 
-    def _detect_drift(self, y_preds, y_true):
-        if self.drift_detector.detect_drift(y_preds, y_true):
+    def _detect_drift(self, *args):
+        if self.drift_detector.detect_drift(*args):
             LOGGER.info(
                 "Drift Detected in the data. Final Estimator will be re-trained on the next train()"
             )
@@ -106,8 +106,8 @@ class DetectAndWarmStart(PipelineStrategy):
             f"Pipeline Strategy [{self.__class__.__name__}] created with actions: {self.pipeline_actions.get_actions()}"
         )
 
-    def _detect_drift(self, y_preds, y_true):
-        if self.drift_detector.detect_drift(y_preds, y_true):
+    def _detect_drift(self, *args):
+        if self.drift_detector.detect_drift(*args):
             LOGGER.info(
                 "Drift Detected in the data. SAIL AutoML will re-start with previously evaluated configurations on the next train()"
             )
@@ -141,8 +141,8 @@ class DetectAndRestart(PipelineStrategy):
             f"Pipeline Strategy [{self.__class__.__name__}] created with actions: {self.pipeline_actions.get_actions()}"
         )
 
-    def _detect_drift(self, y_preds, y_true):
-        if self.drift_detector.detect_drift(y_preds, y_true):
+    def _detect_drift(self, *args):
+        if self.drift_detector.detect_drift(*args):
             LOGGER.info(
                 "Drift Detected in the data. SAIL AutoML will re-start from scratch on the next train()"
             )
@@ -185,7 +185,7 @@ class PrequentialTraining(PipelineStrategy):
         **kwargs,
     ) -> None:
         kwargs.pop("incremental_training")
-        super(DetectAndRestart, self).__init__(
+        super(PrequentialTraining, self).__init__(
             search_method,
             search_data_size,
             drift_detector,
@@ -206,8 +206,8 @@ class PrequentialTraining(PipelineStrategy):
             f"Pipeline Strategy [{self.__class__.__name__}] created with actions: {self.pipeline_actions.get_actions()}"
         )
 
-    def _detect_drift(self, y_preds, y_true):
-        if self.drift_detector.detect_drift(y_preds, y_true):
+    def _detect_drift(self, *args):
+        if self.drift_detector.detect_drift(*args):
             LOGGER.info(
                 "Drift Detected in the data. SAIL AutoML will re-start from scratch on the next train()"
             )

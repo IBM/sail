@@ -11,7 +11,7 @@ from sail.models.auto_ml.pipeline_strategy import DetectAndIncrement
 from sail.models.auto_ml.tune import SAILTuneGridSearchCV, SAILTuneSearchCV
 from sail.models.base import SAILModel
 from sail.pipeline import SAILPipeline
-from river.base import DriftDetector
+from sail.drift_detection.drift_detector import SAILDriftDetector
 from sail.drift_detection.drift_detector import SAILDriftDetector
 from sail.utils.logging import configure_logger
 
@@ -27,7 +27,7 @@ class SAILAutoPipeline(SAILModel):
         search_method_params: dict = None,
         search_data_size: int = 1000,
         incremental_training: bool = False,
-        drift_detector: Union[str, DriftDetector] = "auto",
+        drift_detector: SAILDriftDetector = SAILDriftDetector(),
         pipeline_strategy: Union[None, str] = None,
     ) -> None:
         self.pipeline = pipeline
@@ -37,7 +37,7 @@ class SAILAutoPipeline(SAILModel):
             search_method, search_method_params
         )
         self.incremental_training = incremental_training
-        self.drift_detector = SAILDriftDetector(drift_detector)
+        self.drift_detector = drift_detector
         self.pipeline_strategy = self.resolve_pipeline_strategy(pipeline_strategy)
 
     @property

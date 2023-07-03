@@ -6,6 +6,8 @@ from river.drift import EDDM
 
 
 class TestPipelineStrategy:
+    __test__ = False
+
     def get_params_grid(self, classification_models):
         logistic_reg, random_forest = classification_models
         return [

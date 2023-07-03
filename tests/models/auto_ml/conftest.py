@@ -60,7 +60,7 @@ def regression_pipeline():
         ("standard_scalar", StandardScaler()),
         ("regressor", "passthrough"),
     ]
-    return SAILPipeline(steps=steps, scoring=metrics.Accuracy)
+    return SAILPipeline(steps=steps, scoring=metrics.R2)
 
 
 @pytest.fixture(scope="module")

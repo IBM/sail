@@ -12,19 +12,19 @@ jobs:
     runs-on: ubuntu-20.04
     steps:
       - name: Branch and collaborator info
-        run: | 
+        run: |
           echo Branch Name: ${{github.ref_name}} 
           echo Triggered by: ${{github.actor}}
           echo Event: ${{github.event_name}}
-    
+
       - name: Checkout sail repo
         uses: actions/checkout@v3
 
-      - name: Install python version 3.10
+      - name: Install python version 3.8
         uses: actions/setup-python@v4
         with:
-          python-version: "3.10.*"
-          cache: 'pip'
+          python-version: "3.8.*"
+          cache: "pip"
 
       - name: Install Sail and its dependencies
         run: |
@@ -38,7 +38,7 @@ jobs:
     needs: build
     steps:
       - name: Branch and collaborator info
-        run: | 
+        run: |
           echo Branch Name: ${{github.ref_name}} 
           echo Triggered by: ${{github.actor}}
           echo Event: ${{github.event_name}}
@@ -46,11 +46,11 @@ jobs:
       - name: Checkout sail repo
         uses: actions/checkout@v3
 
-      - name: Install python version 3.10
+      - name: Install python version 3.8
         uses: actions/setup-python@v4
         with:
-          python-version: "3.10.*"
-          cache: 'pip'
+          python-version: "3.8.*"
+          cache: "pip"
 
       - name: Install sail and its dependencies
         run: |

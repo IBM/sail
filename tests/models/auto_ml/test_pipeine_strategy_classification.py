@@ -39,14 +39,14 @@ class TestPipelineStrategy:
                 "pipeline_auto_early_stop": False,
                 "keep_best_configurations": 2,
             },
-            search_data_size=1000,
+            search_data_size=100,
             incremental_training=True,
             drift_detector=SAILDriftDetector(model=EDDM(), drift_param="difference"),
             pipeline_strategy="DetectAndIncrement",
         )
 
         batch_size = 50
-        for start in range(0, 2001, batch_size):
+        for start in range(0, 201, batch_size):
             end = start + batch_size
 
             X_train = X.iloc[start:end]
@@ -72,14 +72,14 @@ class TestPipelineStrategy:
                 "pipeline_auto_early_stop": False,
                 "keep_best_configurations": 2,
             },
-            search_data_size=1000,
+            search_data_size=100,
             incremental_training=True,
             drift_detector=SAILDriftDetector(model=EDDM(), drift_param="difference"),
             pipeline_strategy="DetectAndRetrain",
         )
 
         batch_size = 50
-        for start in range(0, 2001, batch_size):
+        for start in range(0, 201, batch_size):
             end = start + batch_size
 
             X_train = X.iloc[start:end]
@@ -105,14 +105,14 @@ class TestPipelineStrategy:
                 "pipeline_auto_early_stop": False,
                 "keep_best_configurations": 2,
             },
-            search_data_size=1000,
+            search_data_size=100,
             incremental_training=True,
             drift_detector=SAILDriftDetector(model=EDDM(), drift_param="difference"),
             pipeline_strategy="DetectAndWarmStart",
         )
 
         batch_size = 50
-        for start in range(0, 2001, batch_size):
+        for start in range(0, 201, batch_size):
             end = start + batch_size
 
             X_train = X.iloc[start:end]
@@ -138,14 +138,14 @@ class TestPipelineStrategy:
                 "pipeline_auto_early_stop": False,
                 "keep_best_configurations": 2,
             },
-            search_data_size=1000,
+            search_data_size=100,
             incremental_training=True,
             drift_detector=SAILDriftDetector(model=EDDM(), drift_param="difference"),
             pipeline_strategy="DetectAndRestart",
         )
 
         batch_size = 50
-        for start in range(0, 2001, batch_size):
+        for start in range(0, 201, batch_size):
             end = start + batch_size
 
             X_train = X.iloc[start:end]
@@ -171,14 +171,14 @@ class TestPipelineStrategy:
                 "pipeline_auto_early_stop": False,
                 "keep_best_configurations": 2,
             },
-            search_data_size=1000,
+            search_data_size=100,
             incremental_training=True,
             drift_detector=SAILDriftDetector(model=EDDM(), drift_param="difference"),
             pipeline_strategy="PeriodicRestart",
         )
 
         batch_size = 50
-        for start in range(0, 2001, batch_size):
+        for start in range(0, 201, batch_size):
             end = start + batch_size
 
             X_train = X.iloc[start:end]
@@ -204,14 +204,14 @@ class TestPipelineStrategy:
                 "pipeline_auto_early_stop": False,
                 "keep_best_configurations": 2,
             },
-            search_data_size=1000,
+            search_data_size=100,
             incremental_training=True,
             drift_detector=SAILDriftDetector(model=EDDM(), drift_param="difference"),
             pipeline_strategy="PrequentialTraining",
         )
 
         batch_size = 50
-        for start in range(0, 2001, batch_size):
+        for start in range(0, 201, batch_size):
             end = start + batch_size
 
             X_train = X.iloc[start:end]

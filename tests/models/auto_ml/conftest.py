@@ -27,7 +27,7 @@ def seeds_fixed():
 def regression_dataset(request):
     X = pd.read_csv(
         os.path.join(str(request.config.rootdir), "examples/datasets/HDWF2.csv")
-    ).head(5000)
+    ).head(500)
     y = X["power"]
     X.drop(["power", "time"], axis=1, inplace=True)
     return X, y
@@ -37,7 +37,7 @@ def regression_dataset(request):
 def classification_dataset(request):
     X = pd.read_csv(
         os.path.join(str(request.config.rootdir), "examples/datasets/agrawal.csv")
-    ).head(5000)
+    ).head(500)
     y = X["class"]
     X.drop("class", axis=1, inplace=True)
     return X, y

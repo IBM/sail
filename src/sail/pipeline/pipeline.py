@@ -1,14 +1,11 @@
 import os
 import shutil
-from tabnanny import verbose
 import uuid
 from typing import Any, List, Tuple
-from networkx import watts_strogatz_graph
 from sklearn import utils
-from sklearn.base import check_is_fitted, clone
+from sklearn.base import clone
 from sklearn.pipeline import Pipeline
 from sklearn.utils import _print_elapsed_time
-from sklearn.utils.validation import check_is_fitted
 
 from sail.utils.logging import configure_logger
 from sail.utils.progress_bar import SAILProgressBar

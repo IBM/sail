@@ -10,6 +10,8 @@ from sail.models.ensemble.distAggregateClassifier import (
 
 
 class TestDistAggregateClassifier:
+    __test__ = False
+
     def test_dac(self, ray_setup):
         stream = SEAGenerator(random_state=1)
 

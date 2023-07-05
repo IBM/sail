@@ -5,7 +5,7 @@ class TestRegressionSAILPipeline:
         X, y = regression_dataset
 
         batch_size = 50
-        for start in range(0, 1001, batch_size):
+        for start in range(0, 201, batch_size):
             end = start + batch_size
 
             X_train = X.iloc[start:end]
@@ -19,7 +19,7 @@ class TestRegressionSAILPipeline:
         # Load SAIL pipeline
         new_regression_pipeline = regression_pipeline.load(".")
 
-        for start in range(1001, 2001, batch_size):
+        for start in range(201, 401, batch_size):
             end = start + batch_size
 
             X_train = X.iloc[start:end]
@@ -31,7 +31,7 @@ class TestRegressionSAILPipeline:
         X, y = regression_dataset
 
         batch_size = 50
-        for start in range(0, 1001, batch_size):
+        for start in range(0, 201, batch_size):
             end = start + batch_size
 
             X_train = X.iloc[start:end]

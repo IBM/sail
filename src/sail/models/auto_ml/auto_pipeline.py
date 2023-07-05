@@ -1,18 +1,16 @@
 import importlib
-from typing import List, Type, Union
+from typing import Type, Union
 
 import numpy as np
-
-
 from sklearn.utils import check_array
-import inspect
-from sail.models.auto_ml.base_strategy import PipelineActionType, PipelineStrategy
+
+from sail.drift_detection.drift_detector import SAILDriftDetector
+from sail.models.auto_ml.base_strategy import (PipelineActionType,
+                                               PipelineStrategy)
 from sail.models.auto_ml.pipeline_strategy import DetectAndIncrement
 from sail.models.auto_ml.tune import SAILTuneGridSearchCV, SAILTuneSearchCV
 from sail.models.base import SAILModel
 from sail.pipeline import SAILPipeline
-from sail.drift_detection.drift_detector import SAILDriftDetector
-from sail.drift_detection.drift_detector import SAILDriftDetector
 from sail.utils.logging import configure_logger
 
 LOGGER = configure_logger()

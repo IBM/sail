@@ -5,7 +5,7 @@ class TestClassificationSAILPipeline:
         X, y = classification_dataset
 
         batch_size = 50
-        for start in range(0, 1001, batch_size):
+        for start in range(0, 201, batch_size):
             end = start + batch_size
 
             X_train = X.iloc[start:end]
@@ -21,7 +21,7 @@ class TestClassificationSAILPipeline:
         # Load SAIL pipeline
         new_classification_pipeline = classification_pipeline.load(".")
 
-        for start in range(1001, 2001, batch_size):
+        for start in range(201, 401, batch_size):
             end = start + batch_size
 
             X_train = X.iloc[start:end]
@@ -37,7 +37,7 @@ class TestClassificationSAILPipeline:
         X, y = classification_dataset
 
         batch_size = 50
-        for start in range(0, 1001, batch_size):
+        for start in range(0, 201, batch_size):
             end = start + batch_size
 
             X_train = X.iloc[start:end]

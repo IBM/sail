@@ -84,15 +84,12 @@ class SailTuningProgressBar(Thread):
 
     def run(self):
         self.is_running = True
-        resources = ray.cluster_resources()
         params = {
             "Trials": "Running",
-            "Class": self.search_method.__class__.__qualname__,
-            "CPU": int(resources["CPU"] / self.search_method.resources_per_trial["cpu"])
-            * self.search_method.resources_per_trial["cpu"],
-            "GPU": self.search_method.resources_per_trial["gpu"],
+            "Nodes": len(ray.nodes()),
+            "Cluster CPU": ray.cluster_resources()["CPU"],
             "Cluster Memory": str(
-                format(resources["memory"] / (1024 * 1024 * 1024), ".2f")
+                format(ray.cluster_resources()["memory"] / (1024 * 1024 * 1024), ".2f")
             )
             + " GB",
         }

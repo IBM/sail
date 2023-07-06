@@ -1,4 +1,4 @@
-__version__ = "0.4.1"
+__version__ = "0.5.2"
 __package_name__ = "SAIL"
 _logging_level = "INFO"
 

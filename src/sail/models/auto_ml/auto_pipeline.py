@@ -5,8 +5,7 @@ import numpy as np
 from sklearn.utils import check_array
 
 from sail.drift_detection.drift_detector import SAILDriftDetector
-from sail.models.auto_ml.base_strategy import (PipelineActionType,
-                                               PipelineStrategy)
+from sail.models.auto_ml.base_strategy import PipelineActionType, PipelineStrategy
 from sail.models.auto_ml.pipeline_strategy import DetectAndIncrement
 from sail.models.auto_ml.tune import SAILTuneGridSearchCV, SAILTuneSearchCV
 from sail.models.base import SAILModel
@@ -27,16 +26,16 @@ class SAILAutoPipeline(SAILModel):
         incremental_training: bool = False,
         drift_detector: SAILDriftDetector = SAILDriftDetector(),
         pipeline_strategy: Union[None, str] = None,
+        cluster_address: str = None,
     ) -> None:
         self.pipeline = pipeline
         self.pipeline_params_grid = pipeline_params_grid
         self.search_data_size = search_data_size
-        self.search_method = self._check_search_method(
-            search_method, search_method_params
+        self.search_method = self._resolve_search_method(
+            search_method, search_method_params, cluster_address
         )
-        self.incremental_training = incremental_training
         self.drift_detector = drift_detector
-        self.pipeline_strategy = self.resolve_pipeline_strategy(pipeline_strategy)
+        self.pipeline_strategy = self._resolve_pipeline_strategy(pipeline_strategy, incremental_training)
 
     @property
     def best_pipeline(self) -> SAILPipeline:
@@ -98,7 +97,9 @@ class SAILAutoPipeline(SAILModel):
 
         return X, y
 
-    def _check_search_method(self, search_method, search_method_params):
+    def _resolve_search_method(
+        self, search_method, search_method_params, cluster_address
+    ):
         if search_method is None:
             _search_class = SAILTuneGridSearchCV
         elif Type[search_method] in [
@@ -132,10 +133,11 @@ class SAILAutoPipeline(SAILModel):
         return _search_class(
             estimator=self.pipeline,
             param_grid=self.pipeline_params_grid,
+            cluster_address=cluster_address,
             **search_method_params,
         )
 
-    def resolve_pipeline_strategy(self, pipeline_strategy):
+    def _resolve_pipeline_strategy(self, pipeline_strategy, incremental_training):
         pipeline_strategy_class = None
         if pipeline_strategy is None:
             pipeline_strategy_class = DetectAndIncrement
@@ -162,7 +164,7 @@ class SAILAutoPipeline(SAILModel):
             self.search_method,
             self.search_data_size,
             self.drift_detector,
-            incremental_training=self.incremental_training,
+            incremental_training=incremental_training,
         )
 
     def train(self, X, y=None, **fit_params):

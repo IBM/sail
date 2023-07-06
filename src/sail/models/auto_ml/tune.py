@@ -77,10 +77,12 @@ class SAILTuneGridSearchCV(TuneGridSearchCV):
         num_cpus_per_trial=1,
         num_gpus_per_trial=0,
         keep_best_configurations=1,
+        cluster_address=None,
         **kwargs,
     ):
         super(SAILTuneGridSearchCV, self).__init__(*args, **kwargs)
         self.keep_best_configurations = keep_best_configurations
+        self.cluster_address = cluster_address
         self.resources_per_trial = {
             "cpu": num_cpus_per_trial,
             "gpu": num_gpus_per_trial,

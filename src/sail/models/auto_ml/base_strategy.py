@@ -194,10 +194,10 @@ class PipelineStrategy:
             "SAILAutoML_Experiment" + "_" + time.strftime("%d-%m-%Y_%H:%M:%S")
         )
         ray.init(address=self.search_method.cluster_address)
-        progress_bar = SailTuningProgressBar(
-            search_method=self.search_method, warm_start=warm_start
-        )
-        progress_bar.start()
+        # progress_bar = SailTuningProgressBar(
+        #     search_method=self.search_method, warm_start=warm_start
+        # )
+        # progress_bar.start()
         try:
             fit_result = self.search_method.fit(
                 X=self._input_X,
@@ -207,8 +207,9 @@ class PipelineStrategy:
                 **fit_params,
             )
         finally:
-            progress_bar.stop()
-            progress_bar.join()
+            ...
+            # progress_bar.stop()
+            # progress_bar.join()
 
         LOGGER.info("Pipeline tuning completed. Disconnecting Ray cluster...")
         ray.shutdown()

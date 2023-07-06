@@ -1,3 +1,6 @@
+from sail.pipeline import SAILPipeline
+
+
 class TestClassificationSAILPipeline:
     def test_classification_pipeline_partial_fit(
         self, classification_pipeline, classification_dataset
@@ -19,7 +22,7 @@ class TestClassificationSAILPipeline:
         classification_pipeline.save(".")
 
         # Load SAIL pipeline
-        new_classification_pipeline = classification_pipeline.load(".")
+        new_classification_pipeline = SAILPipeline.load(".")
 
         for start in range(201, 401, batch_size):
             end = start + batch_size

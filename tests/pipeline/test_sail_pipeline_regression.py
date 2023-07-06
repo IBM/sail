@@ -1,3 +1,6 @@
+from sail.pipeline import SAILPipeline
+
+
 class TestRegressionSAILPipeline:
     def test_regression_pipeline_partial_fit(
         self, regression_pipeline, regression_dataset
@@ -17,7 +20,7 @@ class TestRegressionSAILPipeline:
         regression_pipeline.save(".")
 
         # Load SAIL pipeline
-        new_regression_pipeline = regression_pipeline.load(".")
+        new_regression_pipeline = SAILPipeline.load(".")
 
         for start in range(201, 401, batch_size):
             end = start + batch_size

@@ -24,7 +24,7 @@ class SAILAutoPipeline(SAILModel):
         search_method_params: dict = None,
         search_data_size: int = 1000,
         incremental_training: bool = False,
-        drift_detector: SAILDriftDetector = SAILDriftDetector(),
+        drift_detector: Union[None, SAILDriftDetector] = None,
         pipeline_strategy: Union[None, str] = None,
         cluster_address: str = None,
     ) -> None:
@@ -35,7 +35,9 @@ class SAILAutoPipeline(SAILModel):
             search_method, search_method_params, cluster_address
         )
         self.drift_detector = drift_detector
-        self.pipeline_strategy = self._resolve_pipeline_strategy(pipeline_strategy, incremental_training)
+        self.pipeline_strategy = self._resolve_pipeline_strategy(
+            pipeline_strategy, incremental_training
+        )
 
     @property
     def best_pipeline(self) -> SAILPipeline:
@@ -161,19 +163,14 @@ class SAILAutoPipeline(SAILModel):
             )
 
         return pipeline_strategy_class(
-            self.search_method,
-            self.search_data_size,
-            self.drift_detector,
+            search_method=self.search_method,
+            search_data_size=self.search_data_size,
+            drift_detector=self.drift_detector,
             incremental_training=incremental_training,
         )
 
     def train(self, X, y=None, **fit_params):
         X, y = self._validate_is_2darray(X, y)
-        # if self.incremental_training:
-        #     if not [param for param in fit_params if param.endswith("__classes")]:
-        #         raise Exception(
-        #             "If incremental training is enabled, train() must contain the classes parameter i.e. a list of all eligible classes. You can use the stepname__parameter format, e.g. `SAILAutoPipeline.train(X, y, classifier__classes=[1, 0])` where classifier is the stepname of the estimator."
-        #         )
         self.pipeline_strategy.next(X, y, **fit_params)
 
     def predict(self, X, **predict_params):

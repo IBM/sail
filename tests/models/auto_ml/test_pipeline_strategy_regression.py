@@ -6,17 +6,15 @@ from river.drift import EDDM
 
 
 class TestPipelineStrategy:
-    __test__ = False
-
     def get_params_grid(self, regression_models):
         linear_reg, random_forest = regression_models
         return [
             {
                 "regressor": [linear_reg],
-                "regressor__l2": [0.1, 0.9],
+                "regressor__l2": [0.1],
                 "regressor__intercept_init": [0.2, 0.5],
             },
-            {"regressor": [random_forest], "regressor__n_models": [10, 15, 20]},
+            {"regressor": [random_forest], "regressor__n_models": [10, 15]},
         ]
 
     def test_detect_and_increment(
@@ -184,7 +182,7 @@ class TestPipelineStrategy:
 
             auto_pipeline.train(X_train, y_train)
 
-    def test_detect_and_prequential_training(
+    def test_prequential_training(
         self, regression_pipeline, regression_models, regression_dataset
     ):
         X, y = regression_dataset
@@ -203,8 +201,6 @@ class TestPipelineStrategy:
                 "keep_best_configurations": 2,
             },
             search_data_size=100,
-            incremental_training=True,
-            drift_detector=SAILDriftDetector(model=EDDM(), drift_param="difference"),
             pipeline_strategy="PrequentialTraining",
         )
 

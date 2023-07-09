@@ -181,14 +181,12 @@ class PrequentialTraining(PipelineStrategy):
         self,
         search_method,
         search_data_size,
-        drift_detector,
         **kwargs,
     ) -> None:
         kwargs.pop("incremental_training")
         super(PrequentialTraining, self).__init__(
             search_method,
             search_data_size,
-            drift_detector,
             incremental_training=True,
             **kwargs,
         )
@@ -198,8 +196,8 @@ class PrequentialTraining(PipelineStrategy):
         self.pipeline_actions.add_action(PipelineActionType.DATA_COLLECTION)
         self.pipeline_actions.add_action(PipelineActionType.FIND_BEST_PIPELINE)
         self.pipeline_actions.add_action(
-            PipelineActionType.SCORE_AND_DETECT_DRIFT,
-            next=PipelineActionType.DATA_COLLECTION,
+            PipelineActionType.PARTIAL_FIT_PIPELINE,
+            next=PipelineActionType.PARTIAL_FIT_PIPELINE,
         )
 
         LOGGER.info(

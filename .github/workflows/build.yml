@@ -1,10 +1,8 @@
 name: SAIL CI
 on:
   push:
-    branches-ignore:
-      - main
   pull_request:
-    branches:
+    branches-ignore:
       - main
 
 jobs:

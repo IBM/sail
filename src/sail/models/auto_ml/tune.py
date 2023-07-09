@@ -62,6 +62,7 @@ def extract_top_best_configurations(
 
 class SAILTuneGridSearchCV(TuneGridSearchCV):
     default_search_params = {
+        "verbose": 1,
         "max_iters": 1,
         "early_stopping": False,
         "mode": "max",
@@ -177,7 +178,7 @@ class SAILTuneGridSearchCV(TuneGridSearchCV):
             resources_per_trial=self.resources_per_trial,
             # local_dir=self.local_dir,
             trial_dirname_creator=lambda trial: f"Trail_{trial.trial_id}",
-            name=self.name,
+            name="SAILAutoML_Experiment" + "_" + time.strftime("%d-%m-%Y_%H:%M:%S"),
             callbacks=resolve_logger_callbacks(self.loggers, self.defined_loggers),
             time_budget_s=self.time_budget_s,
             metric=self._metric_name,
@@ -244,6 +245,7 @@ class SAILTuneGridSearchCV(TuneGridSearchCV):
 
 class SAILTuneSearchCV(TuneSearchCV):
     default_search_params = {
+        "verbose": 1,
         "scoring": "accuracy",
         "mode": "max",
         "early_stopping": False,
@@ -252,63 +254,24 @@ class SAILTuneSearchCV(TuneSearchCV):
         "pipeline_auto_early_stop": False,
         "keep_best_configurations": 1,
     }
-    defined_loggers = ["csv", "mlflow", "json"]
+    defined_loggers = ["csv", "json"]
 
     def __init__(
         self,
-        estimator,
-        param_distributions,
-        early_stopping=None,
-        n_trials=10,
-        scoring=None,
-        n_jobs=None,
-        refit=True,
-        cv=None,
-        verbose=0,
-        random_state=None,
-        error_score=np.nan,
-        return_train_score=False,
-        local_dir="~/ray_results",
-        name=None,
-        max_iters=1,
-        search_optimization="random",
-        use_gpu=False,
-        loggers=None,
-        pipeline_auto_early_stop=True,
-        stopper=None,
-        time_budget_s=None,
-        sk_n_jobs=None,
-        mode=None,
-        search_kwargs=None,
+        *args,
+        num_cpus_per_trial=1,
+        num_gpus_per_trial=0,
         keep_best_configurations=1,
+        cluster_address=None,
+        **kwargs,
     ):
-        super(SAILTuneSearchCV, self).__init__(
-            estimator,
-            param_distributions,
-            early_stopping,
-            n_trials,
-            scoring,
-            n_jobs,
-            refit,
-            cv,
-            verbose,
-            random_state,
-            error_score,
-            return_train_score,
-            local_dir,
-            name,
-            max_iters,
-            search_optimization,
-            use_gpu,
-            loggers,
-            pipeline_auto_early_stop,
-            stopper,
-            time_budget_s,
-            sk_n_jobs,
-            mode,
-            search_kwargs,
-        )
+        super(SAILTuneSearchCV, self).__init__(*args, **kwargs)
         self.keep_best_configurations = keep_best_configurations
+        self.cluster_address = cluster_address
+        self.resources_per_trial = {
+            "cpu": num_cpus_per_trial,
+            "gpu": num_gpus_per_trial,
+        }
 
     def fit(
         self, X, y=None, warm_start=False, groups=None, tune_params=None, **fit_params
@@ -380,9 +343,9 @@ class SAILTuneSearchCV(TuneSearchCV):
             num_samples=self.n_trials,
             config=config,
             fail_fast="raise",
-            resources_per_trial=resources_per_trial,
+            resources_per_trial=self.resources_per_trial,
             local_dir=self.local_dir,
-            name=self.name,
+            name="SAILAutoML_Experiment" + "_" + time.strftime("%d-%m-%Y_%H:%M:%S"),
             callbacks=resolve_logger_callbacks(self.loggers, self.defined_loggers),
             time_budget_s=self.time_budget_s,
             metric=self._metric_name,

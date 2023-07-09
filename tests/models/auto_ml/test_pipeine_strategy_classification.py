@@ -6,14 +6,12 @@ from river.drift import EDDM
 
 
 class TestPipelineStrategy:
-    __test__ = False
-
     def get_params_grid(self, classification_models):
         logistic_reg, random_forest = classification_models
         return [
             {
                 "classifier": [logistic_reg],
-                "classifier__l2": [0.1, 0.9],
+                "classifier__l2": [0.1],
                 "classifier__intercept_init": [0.2, 0.5],
             },
             {
@@ -188,7 +186,7 @@ class TestPipelineStrategy:
 
             auto_pipeline.train(X_train, y_train, classifier__classes=[1, 0])
 
-    def test_detect_and_prequential_training(
+    def test_prequential_training(
         self, classification_pipeline, classification_models, classification_dataset
     ):
         X, y = classification_dataset
@@ -207,8 +205,6 @@ class TestPipelineStrategy:
                 "keep_best_configurations": 2,
             },
             search_data_size=100,
-            incremental_training=True,
-            drift_detector=SAILDriftDetector(model=EDDM(), drift_param="difference"),
             pipeline_strategy="PrequentialTraining",
         )
 

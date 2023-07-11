@@ -1,6 +1,9 @@
 import os
 import shutil
 from typing import Any, List, Tuple
+
+import numpy as np
+import pandas as pd
 from sklearn import utils
 from sklearn.base import clone
 from sklearn.pipeline import Pipeline
@@ -19,7 +22,7 @@ class SAILPipeline(Pipeline):
         self,
         steps: List[Tuple[str, Any]],
         scoring=None,
-        verbose: int = 1,
+        verbosity: int = 1,
     ):
         """[summary]
 
@@ -31,7 +34,7 @@ class SAILPipeline(Pipeline):
         super(SAILPipeline, self).__init__(steps, verbose=False)
         self.scoring = scoring
         self._scorer = self._validate_and_get_scorer(scoring, steps[-1][1])
-        self.log_verbose = verbose
+        self.verbosity = verbosity
 
     def _validate_and_get_scorer(self, scoring, estimator):
         if scoring is None:
@@ -45,27 +48,35 @@ class SAILPipeline(Pipeline):
         return SAILModelScorer(
             scoring=scoring,
             estimator_type=None
-            if isinstance(estimator, str)
+            if estimator == "passthrough"
             else estimator._estimator_type,
             pipeline_mode=True,
         )
 
     @property
-    def progressive_score(self):
-        return self._scorer.progressive_score
+    def get_progressive_score(self):
+        return self._scorer.get_progressive_score
 
     def score(self, X, y, sample_weight=1.0):
         y_preds = self.predict(X)
-        score = self._scorer.score(y_preds, y, sample_weight, verbose=self.log_verbose)
-        return score
+        if isinstance(y, pd.Series):
+            y = y.to_numpy()
+        return self._scorer.score(y, y_preds, sample_weight, verbose=self.verbosity)
+
+    def progressive_score(self, X, y, sample_weight=1.0, detached=False, verbose=1):
+        y_pred = self.predict(X)
+        if isinstance(y, pd.Series):
+            y = y.to_numpy()
+        return self._scorer.progressive_score(
+            y, y_pred, sample_weight, detached, verbose
+        )
 
     def fit(self, X, y=None, **fit_params):
         self._fit(X, y, warm_start=False, **fit_params)
 
     def partial_fit(self, X, y=None, **fit_params):
         if self.__sklearn_is_fitted__():
-            y_preds = self.predict(X)
-            self._scorer._eval_progressive_score(y_preds, y, verbose=0)
+            self.progressive_score(X, y, verbose=0)
         self._fit(X, y, warm_start=True, **fit_params)
 
     def _fit(self, X, y=None, warm_start=None, **fit_params):
@@ -88,7 +99,6 @@ class SAILPipeline(Pipeline):
             return transformed_X, transformer
 
         fit_transform_one_cached = memory.cache(_fit_transform_one)
-
         with SAILProgressBar(
             steps=len(list(self._iter(with_final=True, filter_passthrough=True))),
             desc=f"SAIL Pipeline Partial fit" if warm_start else f"SAIL Pipeline fit",
@@ -96,7 +106,7 @@ class SAILPipeline(Pipeline):
                 "Batch Size": X.shape[0],
             },
             format="pipeline_training",
-            verbose=self.log_verbose,
+            verbose=self.verbosity,
         ) as progress:
             for step_idx, name, transformer in self._iter(
                 with_final=False, filter_passthrough=True
@@ -140,7 +150,7 @@ class SAILPipeline(Pipeline):
             if not warm_start:
                 progress.update_params("Score", self.score(Xh, yh))
             else:
-                progress.update_params("P_Score", self.progressive_score)
+                progress.update_params("P_Score", self.get_progressive_score)
 
         return self
 
@@ -169,7 +179,7 @@ class SAILPipeline(Pipeline):
                     )
                 self._final_estimator.partial_fit(X, y, **fit_params_last_step)
                 progress.update()
-                progress.update_params("P_Score", self.progressive_score)
+                progress.update_params("P_Score", self.get_progressive_score)
             else:
                 if not hasattr(self._final_estimator, "fit"):
                     raise AttributeError(
@@ -181,7 +191,7 @@ class SAILPipeline(Pipeline):
                 progress.update()
                 progress.update_params("Score", self.score(X, y))
 
-    def save(self, model_folder, overwrite=True) -> str:
+    def save(self, model_folder, name="sail_pipeline", overwrite=True) -> str:
         """
         Parameters:
         -----------
@@ -194,7 +204,7 @@ class SAILPipeline(Pipeline):
         -------
         saved_location: str
         """
-        save_location = os.path.join(model_folder, "sail_pipeline")
+        save_location = os.path.join(model_folder, name)
         if not overwrite and os.path.exists(save_location):
             raise Exception(
                 f"{save_location} already exists, specify overwrite=True to replace contents"
@@ -212,9 +222,11 @@ class SAILPipeline(Pipeline):
         # -------------------------------------------
         # explicity save all the steps and steps names
         # -------------------------------------------
-        for i, (name, step) in enumerate(self.steps):
+        for i, (step_name, step) in enumerate(self.steps):
             save_obj(
-                obj=step, location=os.path.join(save_location, "steps"), file_name=name
+                obj=step,
+                location=os.path.join(save_location, "steps"),
+                file_name=step_name,
             )
         save_obj(
             obj=[step_name for (step_name, _) in self.steps],
@@ -224,13 +236,14 @@ class SAILPipeline(Pipeline):
         )
 
         # -------------------------------------------
-        # save scorer
+        # save scorer progressive state if present
         # -------------------------------------------
-        save_obj(
-            obj=self._scorer,
-            location=save_location,
-            file_name="scorer",
-        )
+        if hasattr(self._scorer, "_y_true"):
+            np.savez(
+                os.path.join(save_location, "scorer_state"),
+                y_true=self._scorer._y_true,
+                y_pred=self._scorer._y_pred,
+            )
 
         # -------------------------------------------
         # save rest of the params
@@ -246,8 +259,8 @@ class SAILPipeline(Pipeline):
         return save_location
 
     @classmethod
-    def load(cls, model_folder):
-        load_location = os.path.join(model_folder, "sail_pipeline")
+    def load(cls, model_folder, name="sail_pipeline"):
+        load_location = os.path.join(model_folder, name)
 
         # -------------------------------------------
         # Load steps to add to sail pipeline
@@ -259,9 +272,9 @@ class SAILPipeline(Pipeline):
             file_name="steps_meta",
             serialize_type="json",
         )
-        for name in steps_meta:
-            step_obj = load_obj(location=steps_location, file_name=name)
-            steps.append((name, step_obj))
+        for step_name in steps_meta:
+            step_obj = load_obj(location=steps_location, file_name=step_name)
+            steps.append((step_name, step_obj))
 
         # -------------------------------------------
         # Load params
@@ -269,14 +282,18 @@ class SAILPipeline(Pipeline):
         params = load_obj(location=load_location, file_name="params")
 
         # -------------------------------------------
-        # Load scorer
-        # -------------------------------------------
-        scorer = load_obj(location=load_location, file_name="scorer")
-
-        # -------------------------------------------
         # create pipeline
         # -------------------------------------------
         sail_pipeline = SAILPipeline(steps=steps, **params)
-        sail_pipeline._scorer = scorer
+
+        # -------------------------------------------
+        # Pre-load progressive scorer state from initial_points if present.
+        # -------------------------------------------
+        if os.path.exists(os.path.join(load_location, "scorer_state.npz")):
+            initial_points = np.load(os.path.join(load_location, "scorer_state.npz"))
+            sail_pipeline._scorer.progressive_score(
+                initial_points["y_true"], initial_points["y_pred"], verbose=1
+            )
+            initial_points.close()
 
         return sail_pipeline

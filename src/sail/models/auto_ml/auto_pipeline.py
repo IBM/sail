@@ -57,7 +57,7 @@ class SAILAutoPipeline(SAILModel, BaseEstimator):
     @property
     def progressive_score(self) -> float:
         if self.check_is_fitted("progressive_score"):
-            return self.best_pipeline.progressive_score
+            return self.best_pipeline.get_progressive_score
 
     @property
     def cv_results(self):
@@ -225,12 +225,6 @@ class SAILAutoPipeline(SAILModel, BaseEstimator):
         params = self.get_params(deep=False)
 
         # -------------------------------------------
-        # save sail pipeline
-        # -------------------------------------------
-        sail_pipeline = params.pop("pipeline")
-        sail_pipeline.save(save_location)
-
-        # -------------------------------------------
         # save search_method params
         # -------------------------------------------
         obj = []
@@ -246,24 +240,25 @@ class SAILAutoPipeline(SAILModel, BaseEstimator):
         # -------------------------------------------
         # save pipeline_strategy state
         # -------------------------------------------
-        obj = {}
         pipeline_strategy = params.pop("pipeline_strategy")
-        obj["current_action"] = pipeline_strategy.get_current_action()
-        if hasattr(pipeline_strategy, "_input_X"):
-            obj.update(
-                {
-                    "_input_X": pipeline_strategy._input_X,
-                    "_input_y": pipeline_strategy._input_y,
-                }
-            )
         save_obj(
-            obj,
+            {"current_action": pipeline_strategy.get_current_action()},
             location=os.path.join(save_location, "pipeline_strategy"),
             file_name="state",
         )
 
         # -------------------------------------------
-        # save best pipeline and fit results
+        # save data already collected for auto ml tuning
+        # -------------------------------------------
+        if hasattr(pipeline_strategy, "_input_X"):
+            np.savez(
+                os.path.join(save_location, "pipeline_strategy", "data"),
+                input_X=pipeline_strategy._input_X,
+                input_y=pipeline_strategy._input_y,
+            )
+
+        # -------------------------------------------
+        # save fit results and best pipeline
         # -------------------------------------------
         if hasattr(pipeline_strategy, "_fit_result"):
             save_obj(
@@ -271,10 +266,8 @@ class SAILAutoPipeline(SAILModel, BaseEstimator):
                 location=os.path.join(save_location, "pipeline_strategy"),
                 file_name="fit_result",
             )
-            save_obj(
-                pipeline_strategy._best_pipeline,
-                location=os.path.join(save_location, "pipeline_strategy"),
-                file_name="best_pipeline",
+            pipeline_strategy._best_pipeline.save(
+                os.path.join(save_location, "pipeline_strategy"), name="best_pipeline"
             )
 
         # -------------------------------------------
@@ -298,17 +291,12 @@ class SAILAutoPipeline(SAILModel, BaseEstimator):
         params = load_obj(location=load_location, file_name="params")
 
         # -------------------------------------------
-        # load sail pipeline
-        # -------------------------------------------
-        pipeline = SAILPipeline.load(load_location)
-
-        # -------------------------------------------
         # create SAILAutoPipeline
         # -------------------------------------------
-        sail_auto_pipeline = SAILAutoPipeline(pipeline=pipeline, **params)
+        sail_auto_pipeline = SAILAutoPipeline(**params)
 
         # -------------------------------------------
-        # Load best_configurations
+        # Load best_configurations if present
         # -------------------------------------------
         best_configurations = load_obj(
             location=os.path.join(load_location, "search_method"),
@@ -325,12 +313,18 @@ class SAILAutoPipeline(SAILModel, BaseEstimator):
             file_name="state",
         )
         sail_auto_pipeline.pipeline_strategy.set_current_action(state["current_action"])
-        if "_input_X" in state:
-            sail_auto_pipeline.pipeline_strategy._input_X = state["_input_X"]
-            sail_auto_pipeline.pipeline_strategy._input_y = state["_input_y"]
 
         # -------------------------------------------
-        # Load best pipeline and fit results
+        # Load data already collected data for auto ml tuning
+        # -------------------------------------------
+        if os.path.exists(os.path.join(load_location, "pipeline_strategy", "data.npz")):
+            data = np.load(os.path.join(load_location, "pipeline_strategy", "data.npz"))
+            sail_auto_pipeline.pipeline_strategy._input_X = data["input_X"]
+            sail_auto_pipeline.pipeline_strategy._input_y = data["input_y"]
+            data.close()
+
+        # -------------------------------------------
+        # Load fit results and best pipeline
         # -------------------------------------------
         try:
             fit_result = load_obj(
@@ -338,12 +332,11 @@ class SAILAutoPipeline(SAILModel, BaseEstimator):
                 file_name="fit_result",
             )
             sail_auto_pipeline.pipeline_strategy._fit_result = fit_result
-            best_pipeline = load_obj(
-                location=os.path.join(load_location, "pipeline_strategy"),
-                file_name="best_pipeline",
+            best_pipeline = SAILPipeline.load(
+                os.path.join(load_location, "pipeline_strategy"), name="best_pipeline"
             )
             sail_auto_pipeline.pipeline_strategy._best_pipeline = best_pipeline
-        except:
-            pass
+        except Exception as e:
+            print(e)
 
         return sail_auto_pipeline

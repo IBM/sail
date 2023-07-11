@@ -127,15 +127,13 @@ class PipelineStrategy:
             == PipelineActionType.SCORE_AND_DETECT_DRIFT
         ):
             self.action_separator()
-            y_preds = self._best_pipeline.predict(X)
             if self.incremental_training:
-                score = self._best_pipeline._scorer._eval_progressive_score(
-                    y_preds, y, detached=True
-                )
+                score = self._best_pipeline.progressive_score(X, y, detached=True)
             else:
                 score = self._best_pipeline.score(X, y)
 
-            if not self._detect_drift(score, y_preds, y) and self.incremental_training:
+            y_pred = self._best_pipeline.predict(X)
+            if not self._detect_drift(score, y_pred, y) and self.incremental_training:
                 self._partial_fit_pipeline(X, y, **fit_params)
         elif (
             self.pipeline_actions.current_action
@@ -189,7 +187,8 @@ class PipelineStrategy:
                 tune_params=tune_params,
                 **fit_params,
             )
-        except:
+        except Exception as e:
+            LOGGER.debug(e)
             LOGGER.info("Pipeline tuning failed. Disconnecting Ray cluster...")
         finally:
             ray.shutdown()
@@ -197,7 +196,7 @@ class PipelineStrategy:
 
         # set best estimator and fit results
         self._best_pipeline = fit_result.best_estimator_
-        self._best_pipeline.log_verbose = 1
+        self._best_pipeline.verbosity = 1
         self._fit_result = fit_result
         LOGGER.info(f"Found best params: {fit_result.best_params}")
 

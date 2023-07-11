@@ -74,20 +74,17 @@ class SAILTuneGridSearchCV(TuneGridSearchCV):
 
     def __init__(
         self,
-        *args,
         num_cpus_per_trial=1,
         num_gpus_per_trial=0,
         keep_best_configurations=1,
         cluster_address=None,
         **kwargs,
     ):
-        super(SAILTuneGridSearchCV, self).__init__(*args, **kwargs)
+        super(SAILTuneGridSearchCV, self).__init__(**kwargs)
         self.keep_best_configurations = keep_best_configurations
         self.cluster_address = cluster_address
-        self.resources_per_trial = {
-            "cpu": num_cpus_per_trial,
-            "gpu": num_gpus_per_trial,
-        }
+        self.num_cpus_per_trial = num_cpus_per_trial
+        self.num_gpus_per_trial = num_gpus_per_trial
 
     def fit(
         self, X, y=None, warm_start=False, groups=None, tune_params=None, **fit_params
@@ -175,8 +172,10 @@ class SAILTuneGridSearchCV(TuneGridSearchCV):
             stop=stopper,
             config=config,
             fail_fast="raise",
-            resources_per_trial=self.resources_per_trial,
-            # local_dir=self.local_dir,
+            resources_per_trial={
+                "cpu": self.num_cpus_per_trial,
+                "gpu": self.num_gpus_per_trial,
+            },
             trial_dirname_creator=lambda trial: f"Trail_{trial.trial_id}",
             name="SAILAutoML_Experiment" + "_" + time.strftime("%d-%m-%Y_%H:%M:%S"),
             callbacks=resolve_logger_callbacks(self.loggers, self.defined_loggers),
@@ -258,20 +257,17 @@ class SAILTuneSearchCV(TuneSearchCV):
 
     def __init__(
         self,
-        *args,
         num_cpus_per_trial=1,
         num_gpus_per_trial=0,
         keep_best_configurations=1,
         cluster_address=None,
         **kwargs,
     ):
-        super(SAILTuneSearchCV, self).__init__(*args, **kwargs)
+        super(SAILTuneSearchCV, self).__init__(**kwargs)
         self.keep_best_configurations = keep_best_configurations
         self.cluster_address = cluster_address
-        self.resources_per_trial = {
-            "cpu": num_cpus_per_trial,
-            "gpu": num_gpus_per_trial,
-        }
+        self.num_cpus_per_trial = num_cpus_per_trial
+        self.num_gpus_per_trial = num_gpus_per_trial
 
     def fit(
         self, X, y=None, warm_start=False, groups=None, tune_params=None, **fit_params
@@ -343,7 +339,10 @@ class SAILTuneSearchCV(TuneSearchCV):
             num_samples=self.n_trials,
             config=config,
             fail_fast="raise",
-            resources_per_trial=self.resources_per_trial,
+            resources_per_trial={
+                "cpu": self.num_cpus_per_trial,
+                "gpu": self.num_gpus_per_trial,
+            },
             local_dir=self.local_dir,
             name="SAILAutoML_Experiment" + "_" + time.strftime("%d-%m-%Y_%H:%M:%S"),
             callbacks=resolve_logger_callbacks(self.loggers, self.defined_loggers),

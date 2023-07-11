@@ -102,6 +102,12 @@ class PipelineStrategy:
             ">>>--------------------------------------------------------------------------------------------"
         )
 
+    def set_current_action(self, current_action: PipelineAction):
+        self.pipeline_actions.current_action_node = current_action
+
+    def get_current_action(self):
+        return self.pipeline_actions.current_action_node
+
     def next(self, X, y=None, tune_params={}, **fit_params):
         if self.pipeline_actions.current_action == PipelineActionType.DATA_COLLECTION:
             self._collect_data_for_parameter_tuning(X, y)
@@ -141,19 +147,9 @@ class PipelineStrategy:
             self.pipeline_actions.current_action == PipelineActionType.PARTIAL_FIT_MODEL
         ):
             self.action_separator()
-            # if self.incremental_training:
-            #     y_preds = self._best_pipeline.predict(X)
-            #     self._best_pipeline._scorer._eval_progressive_score(
-            #         y_preds, y, verbose=0
-            #     )
             self._partial_fit_model(X, y, **fit_params)
         elif self.pipeline_actions.current_action == PipelineActionType.FIT_MODEL:
             self.action_separator()
-            # if self.incremental_training:
-            #     y_preds = self._best_pipeline.predict(X)
-            #     self._best_pipeline._scorer._eval_progressive_score(
-            #         y_preds, y, verbose=0
-            #     )
             self._fit_model(X, y, **fit_params)
 
     def _collect_data_for_parameter_tuning(self, X, y):
@@ -212,7 +208,6 @@ class PipelineStrategy:
         self.pipeline_actions.next()
 
     def _partial_fit_pipeline(self, X, y, **fit_params):
-        LOGGER.debug("Partially fitting best pipeline.")
         self._best_pipeline.partial_fit(X, y, **fit_params)
 
     def _partial_fit_model(self, X, y, **fit_params):

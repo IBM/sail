@@ -4,20 +4,21 @@ import sys
 import copy
 import river
 from river import metrics
+from sympy import public
 
 from sail.utils.progress_bar import SAILProgressBar
 
 
 class SAILModelScorer:
-    def __init__(self, scoring, estimator=None, is_pipeline=False) -> None:
+    def __init__(self, scoring=None, estimator_type=None, pipeline_mode=False) -> None:
         self.scoring = scoring
-        self.estimator = estimator
-        self.is_pipeline = is_pipeline
-        self._scorer = self._resolve_scoring(scoring, estimator)
+        self.estimator_type = estimator_type
+        self.pipeline_mode = pipeline_mode
+        self._metric = self._resolve_scoring(scoring, estimator_type)
 
     @property
     def progressive_score(self):
-        return self._scorer.get()
+        return self._metric.get()
 
     def get_default_scorer(self, estimator_type):
         if estimator_type == "classifier":
@@ -31,14 +32,11 @@ class SAILModelScorer:
                 "Invalid Estimator type. Last step in the pipeline can only be a regressor, classifier or clusterer"
             )
 
-    def _resolve_scoring(self, scoring, estimator):
+    def _resolve_scoring(self, scoring, estimator_type):
+        assert not (
+            scoring == estimator_type == None
+        ), "Either scoring or estimator_type must be a non null value."
         if scoring is None:
-            estimator_type = (
-                None if estimator == "passthrough" else estimator._estimator_type
-            )
-            assert (
-                estimator_type is not None
-            ), "SAILPipeline.scoring cannot be None when the estimator is set to passthrough in SAILPipeline."
             return self.get_default_scorer(estimator_type)
         try:
             if isinstance(scoring, str):
@@ -74,19 +72,20 @@ class SAILModelScorer:
                 f"Method '{method_name}' is not available in river.metrics. Scoring must be a str or an instance of the {river.metrics.__all__}."
             )
 
+    @public
     def score(self, y_preds, y_true, sample_weight=1.0, verbose=1):
-        desc_type = "Pipeline" if self.is_pipeline else "Model"
+        desc_type = "Pipeline" if self.pipeline_mode else "Model"
         with SAILProgressBar(
             steps=len(y_preds),
             desc=f"SAIL {desc_type} Score",
             params={
-                "Metric": self._scorer.__class__.__qualname__,
+                "Metric": self._metric.__class__.__qualname__,
                 "Batch Size": len(y_preds),
             },
             format="scoring",
             verbose=verbose,
         ) as progress:
-            scorer = self._resolve_scoring(self.scoring, self.estimator)
+            scorer = self._resolve_scoring(self.scoring, self.estimator_type)
             for v1, v2 in zip(y_true, y_preds):
                 scorer.update(v1, v2, sample_weight)
                 progress.update()
@@ -96,21 +95,21 @@ class SAILModelScorer:
     def _eval_progressive_score(
         self, y_preds, y_true, sample_weight=1.0, detached=False, verbose=1
     ):
-        desc_type = "Pipeline" if self.is_pipeline else "Model"
+        desc_type = "Pipeline" if self.pipeline_mode else "Model"
         with SAILProgressBar(
             steps=len(y_preds),
             desc=f"SAIL {desc_type} Progressive Score",
             params={
-                "Metric": self._scorer.__class__.__qualname__,
+                "Metric": self._metric.__class__.__qualname__,
                 "Batch Size": len(y_preds),
             },
             format="scoring",
             verbose=verbose,
         ) as progress:
             if detached:
-                scorer = copy.deepcopy(self._scorer)
+                scorer = copy.deepcopy(self._metric)
             else:
-                scorer = self._scorer
+                scorer = self._metric
             for v1, v2 in zip(y_true, y_preds):
                 scorer.update(v1, v2, sample_weight)
                 progress.update()
@@ -118,4 +117,4 @@ class SAILModelScorer:
         return scorer.get()
 
     def clear(self):
-        self._scorer = self._resolve_scoring()
+        self._metric = self._resolve_scoring(self.scoring, self.estimator_type)

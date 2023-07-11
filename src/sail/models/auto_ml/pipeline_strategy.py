@@ -203,12 +203,3 @@ class PrequentialTraining(PipelineStrategy):
         LOGGER.info(
             f"Pipeline Strategy [{self.__class__.__name__}] created with actions: {self.pipeline_actions.get_actions()}"
         )
-
-    def _detect_drift(self, *args):
-        if self.drift_detector.detect_drift(*args):
-            LOGGER.info(
-                "Drift Detected in the data. SAIL AutoML will re-start from scratch on the next train()"
-            )
-            self.pipeline_actions.next()
-            return True
-        return False

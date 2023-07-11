@@ -1,7 +1,11 @@
 import importlib
+import inspect
+import os
+import shutil
 from typing import Type, Union
 
 import numpy as np
+from sklearn.base import BaseEstimator
 from sklearn.utils import check_array
 
 from sail.drift_detection.drift_detector import SAILDriftDetector
@@ -11,11 +15,12 @@ from sail.models.auto_ml.tune import SAILTuneGridSearchCV, SAILTuneSearchCV
 from sail.models.base import SAILModel
 from sail.pipeline import SAILPipeline
 from sail.utils.logging import configure_logger
+from sail.utils.serialization import load_obj, save_obj
 
-LOGGER = configure_logger()
+LOGGER = configure_logger(logger_name="SAILAutoPipeline")
 
 
-class SAILAutoPipeline(SAILModel):
+class SAILAutoPipeline(SAILModel, BaseEstimator):
     def __init__(
         self,
         pipeline: SAILPipeline,
@@ -30,11 +35,15 @@ class SAILAutoPipeline(SAILModel):
     ) -> None:
         self.pipeline = pipeline
         self.pipeline_params_grid = pipeline_params_grid
+        self.search_method_params = search_method_params
         self.search_data_size = search_data_size
+        self.incremental_training = incremental_training
+        self.drift_detector = drift_detector
+        self.cluster_address = cluster_address
+
         self.search_method = self._resolve_search_method(
             search_method, search_method_params, cluster_address
         )
-        self.drift_detector = drift_detector
         self.pipeline_strategy = self._resolve_pipeline_strategy(
             pipeline_strategy, incremental_training
         )
@@ -181,3 +190,160 @@ class SAILAutoPipeline(SAILModel):
     def score(self, X, y=None, sample_weight=1.0) -> float:
         if self.check_is_fitted("score()"):
             return self.best_pipeline.score(X, y, sample_weight)
+
+    def save_model(self, model_folder, overwrite=True) -> str:
+        """
+        Parameters:
+        -----------
+        model_folder: str
+            location to save the model
+        overwrite: bool (False)
+            if True and model_folder already exists, it will be delted and recreated
+
+        Returns
+        -------
+        saved_location: str
+        """
+        save_location = os.path.join(model_folder, "sail_auto_pipeline")
+        if not overwrite and os.path.exists(save_location):
+            raise Exception(
+                f"{save_location} already exists, specify overwrite=True to replace contents"
+            )
+        else:
+            # delete old folder to avoid unwanted file overlaps
+            if os.path.exists(save_location) and os.path.isdir(save_location):
+                shutil.rmtree(save_location)
+
+            LOGGER.info(f"making directory tree {save_location}")
+            os.makedirs(save_location, exist_ok=True)
+            if not os.path.exists(save_location):
+                raise Exception(f"target directory {save_location} can not be created!")
+
+        # -------------------------------------------
+        # Get all params
+        # -------------------------------------------
+        params = self.get_params(deep=False)
+
+        # -------------------------------------------
+        # save sail pipeline
+        # -------------------------------------------
+        sail_pipeline = params.pop("pipeline")
+        sail_pipeline.save(save_location)
+
+        # -------------------------------------------
+        # save search_method params
+        # -------------------------------------------
+        obj = []
+        search_method = params.pop("search_method")
+        if hasattr(search_method, "_best_configurations"):
+            obj = search_method._best_configurations
+        save_obj(
+            obj,
+            location=os.path.join(save_location, "search_method"),
+            file_name="best_configurations",
+        )
+
+        # -------------------------------------------
+        # save pipeline_strategy state
+        # -------------------------------------------
+        obj = {}
+        pipeline_strategy = params.pop("pipeline_strategy")
+        obj["current_action"] = pipeline_strategy.get_current_action()
+        if hasattr(pipeline_strategy, "_input_X"):
+            obj.update(
+                {
+                    "_input_X": pipeline_strategy._input_X,
+                    "_input_y": pipeline_strategy._input_y,
+                }
+            )
+        save_obj(
+            obj,
+            location=os.path.join(save_location, "pipeline_strategy"),
+            file_name="state",
+        )
+
+        # -------------------------------------------
+        # save best pipeline and fit results
+        # -------------------------------------------
+        if hasattr(pipeline_strategy, "_fit_result"):
+            save_obj(
+                pipeline_strategy._fit_result,
+                location=os.path.join(save_location, "pipeline_strategy"),
+                file_name="fit_result",
+            )
+            save_obj(
+                pipeline_strategy._best_pipeline,
+                location=os.path.join(save_location, "pipeline_strategy"),
+                file_name="best_pipeline",
+            )
+
+        # -------------------------------------------
+        # save rest of the params
+        # -------------------------------------------
+        save_obj(
+            obj=params,
+            location=save_location,
+            file_name="params",
+        )
+
+        return save_location
+
+    @classmethod
+    def load_model(cls, model_folder):
+        load_location = os.path.join(model_folder, "sail_auto_pipeline")
+
+        # -------------------------------------------
+        # Load params
+        # -------------------------------------------
+        params = load_obj(location=load_location, file_name="params")
+
+        # -------------------------------------------
+        # load sail pipeline
+        # -------------------------------------------
+        pipeline = SAILPipeline.load(load_location)
+
+        # -------------------------------------------
+        # create SAILAutoPipeline
+        # -------------------------------------------
+        sail_auto_pipeline = SAILAutoPipeline(pipeline=pipeline, **params)
+
+        # -------------------------------------------
+        # Load best_configurations
+        # -------------------------------------------
+        best_configurations = load_obj(
+            location=os.path.join(load_location, "search_method"),
+            file_name="best_configurations",
+        )
+        if len(best_configurations) > 0:
+            sail_auto_pipeline.search_method._best_configurations = best_configurations
+
+        # -------------------------------------------
+        # Load existing pipeline_strategy state
+        # -------------------------------------------
+        state = load_obj(
+            location=os.path.join(load_location, "pipeline_strategy"),
+            file_name="state",
+        )
+        sail_auto_pipeline.pipeline_strategy.set_current_action(state["current_action"])
+        if "_input_X" in state:
+            sail_auto_pipeline.pipeline_strategy._input_X = state["_input_X"]
+            sail_auto_pipeline.pipeline_strategy._input_y = state["_input_y"]
+
+        # -------------------------------------------
+        # Load best pipeline and fit results
+        # -------------------------------------------
+        try:
+            fit_result = load_obj(
+                location=os.path.join(load_location, "pipeline_strategy"),
+                file_name="fit_result",
+            )
+            sail_auto_pipeline.pipeline_strategy._fit_result = fit_result
+            best_pipeline = load_obj(
+                location=os.path.join(load_location, "pipeline_strategy"),
+                file_name="best_pipeline",
+            )
+            sail_auto_pipeline.pipeline_strategy._best_pipeline = best_pipeline
+        except:
+            pass
+
+        return sail_auto_pipeline

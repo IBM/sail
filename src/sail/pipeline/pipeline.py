@@ -1,6 +1,5 @@
 import os
 import shutil
-import uuid
 from typing import Any, List, Tuple
 from sklearn import utils
 from sklearn.base import clone
@@ -12,7 +11,7 @@ from sail.utils.progress_bar import SAILProgressBar
 from sail.utils.scorer import SAILModelScorer
 from sail.utils.serialization import load_obj, save_obj
 
-LOGGER = configure_logger()
+LOGGER = configure_logger(logger_name="SAILPipeline")
 
 
 class SAILPipeline(Pipeline):
@@ -30,12 +29,26 @@ class SAILPipeline(Pipeline):
             verbosity: verbosity level for training logs. 0 (No logs) is default.
         """
         super(SAILPipeline, self).__init__(steps, verbose=False)
-        self._uuid = uuid.uuid4()
         self.scoring = scoring
-        self._scorer = SAILModelScorer(
-            scoring=scoring, estimator=steps[-1][1], is_pipeline=True
-        )
+        self._scorer = self._validate_and_get_scorer(scoring, steps[-1][1])
         self.log_verbose = verbose
+
+    def _validate_and_get_scorer(self, scoring, estimator):
+        if scoring is None:
+            estimator_type = (
+                None if estimator == "passthrough" else estimator._estimator_type
+            )
+            assert (
+                estimator_type is not None
+            ), "SAILPipeline.scoring cannot be None when the estimator is set to passthrough in SAILPipeline.steps."
+
+        return SAILModelScorer(
+            scoring=scoring,
+            estimator_type=None
+            if isinstance(estimator, str)
+            else estimator._estimator_type,
+            pipeline_mode=True,
+        )
 
     @property
     def progressive_score(self):
@@ -197,31 +210,73 @@ class SAILPipeline(Pipeline):
                 raise Exception(f"target directory {save_location} can not be created!")
 
         # -------------------------------------------
-        # explicity save all the steps
+        # explicity save all the steps and steps names
         # -------------------------------------------
         for i, (name, step) in enumerate(self.steps):
             save_obj(
                 obj=step, location=os.path.join(save_location, "steps"), file_name=name
             )
+        save_obj(
+            obj=[step_name for (step_name, _) in self.steps],
+            location=os.path.join(save_location, "steps"),
+            file_name="steps_meta",
+            serialize_type="json",
+        )
 
-        # save the complete pipeline which internally calls __getstate__ to
-        # remove unpickled objects
-        save_obj(obj=self, location=save_location, file_name="pipeline")
+        # -------------------------------------------
+        # save scorer
+        # -------------------------------------------
+        save_obj(
+            obj=self._scorer,
+            location=save_location,
+            file_name="scorer",
+        )
+
+        # -------------------------------------------
+        # save rest of the params
+        # -------------------------------------------
+        params = self.get_params(deep=False)
+        params.pop("steps")
+        save_obj(
+            obj=params,
+            location=save_location,
+            file_name="params",
+        )
 
         return save_location
 
     @classmethod
     def load(cls, model_folder):
         load_location = os.path.join(model_folder, "sail_pipeline")
-        # load pipeline
-        sail_pipeline = load_obj(location=load_location, file_name="pipeline")
 
-        # load steps to pipeline
-        for i, (name, _) in enumerate(sail_pipeline.steps):
-            step_obj = load_obj(
-                location=os.path.join(load_location, "steps"), file_name=name
-            )
+        # -------------------------------------------
+        # Load steps to add to sail pipeline
+        # -------------------------------------------
+        steps = []
+        steps_location = os.path.join(load_location, "steps")
+        steps_meta = load_obj(
+            location=steps_location,
+            file_name="steps_meta",
+            serialize_type="json",
+        )
+        for name in steps_meta:
+            step_obj = load_obj(location=steps_location, file_name=name)
+            steps.append((name, step_obj))
 
-            sail_pipeline.steps[i] = (name, step_obj)
+        # -------------------------------------------
+        # Load params
+        # -------------------------------------------
+        params = load_obj(location=load_location, file_name="params")
+
+        # -------------------------------------------
+        # Load scorer
+        # -------------------------------------------
+        scorer = load_obj(location=load_location, file_name="scorer")
+
+        # -------------------------------------------
+        # create pipeline
+        # -------------------------------------------
+        sail_pipeline = SAILPipeline(steps=steps, **params)
+        sail_pipeline._scorer = scorer
 
         return sail_pipeline

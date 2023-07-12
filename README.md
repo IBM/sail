@@ -16,7 +16,7 @@ See the [**SAIL Wiki**](https://github.com/IBM/sail/wiki) for full documentation
 
 ## Architecture
 
-### SAIL Pipeline 
+### SAIL Pipeline
 
 ![Architecture](architecture.png)
 
@@ -58,12 +58,6 @@ Supported `OPTION` include:
 - examples : to run notebooks and examples
 - all : all of the above
 - all_arm64 : Apple ARM64 version all of the above
-
-Sail has an additional dependency on Scikit-Multiflow which can be installed as follows:
-
-```sh
-pip install scikit-multiflow==0.5.3
-```
 
 ## ✍️ Examples and Notebooks
 

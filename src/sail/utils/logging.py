@@ -3,20 +3,24 @@ import logzero
 import sail
 
 
-def configure_logger(logger_name: str = "", logging_level=sail.get_logging_level()):
+def configure_logger(
+    package_name: str = "SAIL",
+    logger_name: str = "",
+    logging_level=sail.get_logging_level(),
+):
     if logger_name:
         logger_name = " (" + logger_name + ")"
 
     info_log_format = (
         "%(color)s[%(asctime)s:%(msecs)d] - %(levelname)s - "
-        + sail.__package_name__
+        + package_name
         + logger_name
         + " : "
         "%(end_color)s%(message)s"
     )
     rest_log_format = (
         "%(color)s[%(asctime)s:%(msecs)d] - %(levelname)s - "
-        + sail.__package_name__
+        + package_name
         + logger_name
         + " "
         "%(module)s:%(funcName)s:%(lineno)d%(end_color)s %(message)s"

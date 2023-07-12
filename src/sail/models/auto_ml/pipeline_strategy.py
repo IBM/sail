@@ -181,14 +181,12 @@ class PrequentialTraining(PipelineStrategy):
         self,
         search_method,
         search_data_size,
-        drift_detector,
         **kwargs,
     ) -> None:
         kwargs.pop("incremental_training")
         super(PrequentialTraining, self).__init__(
             search_method,
             search_data_size,
-            drift_detector,
             incremental_training=True,
             **kwargs,
         )
@@ -198,19 +196,10 @@ class PrequentialTraining(PipelineStrategy):
         self.pipeline_actions.add_action(PipelineActionType.DATA_COLLECTION)
         self.pipeline_actions.add_action(PipelineActionType.FIND_BEST_PIPELINE)
         self.pipeline_actions.add_action(
-            PipelineActionType.SCORE_AND_DETECT_DRIFT,
-            next=PipelineActionType.DATA_COLLECTION,
+            PipelineActionType.PARTIAL_FIT_PIPELINE,
+            next=PipelineActionType.PARTIAL_FIT_PIPELINE,
         )
 
         LOGGER.info(
             f"Pipeline Strategy [{self.__class__.__name__}] created with actions: {self.pipeline_actions.get_actions()}"
         )
-
-    def _detect_drift(self, *args):
-        if self.drift_detector.detect_drift(*args):
-            LOGGER.info(
-                "Drift Detected in the data. SAIL AutoML will re-start from scratch on the next train()"
-            )
-            self.pipeline_actions.next()
-            return True
-        return False

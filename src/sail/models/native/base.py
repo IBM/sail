@@ -3,15 +3,18 @@
 # Almost all the code taken from scikit-multiflow
 # https://github.com/scikit-multiflow/scikit-multiflow/blob/a7e316d/src/skmultiflow/core/base.py
 
-from abc import ABCMeta, abstractmethod
-
 import copy
-import warnings
-from collections import defaultdict
 import inspect
 import re
+import warnings
+from abc import ABCMeta, abstractmethod
+from collections import defaultdict
 
+import sklearn
+
+sklearn.set_config(print_changed_only=False)
 import numpy as np
+from sklearn.utils._pprint import _EstimatorPrettyPrinter
 
 __version__ = "0.1.0"
 
@@ -244,8 +247,6 @@ class BaseEstimator:
         # characters to render. We pass it as an optional parameter to ease
         # the tests.
 
-        from skmultiflow.utils._pprint import _EstimatorPrettyPrinter
-
         N_MAX_ELEMENTS_TO_SHOW = 30  # number of elements to show in sequences
 
         # use ellipsis for sequences with a lot of elements
@@ -298,23 +299,7 @@ class BaseEstimator:
             state = self.__dict__.copy()
         return state
 
-        # if type(self).__module__.startswith('skmultiflow.'):
-        #     return dict(state.items(), _skmultiflow_version=__version__)
-        # else:
-        #     return state
-
     def __setstate__(self, state):
-        if type(self).__module__.startswith("skmultiflow."):
-            pickle_version = state.pop("_skmultiflow_version", "pre-0.18")
-            if pickle_version != __version__:
-                warnings.warn(
-                    "Trying to unpickle estimator {0} from version {1} when "
-                    "using version {2}. This might lead to breaking code or "
-                    "invalid results. Use at your own risk.".format(
-                        self.__class__.__name__, pickle_version, __version__
-                    ),
-                    UserWarning,
-                )
         try:
             super().__setstate__(state)
         except AttributeError:

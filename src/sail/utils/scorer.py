@@ -7,7 +7,6 @@ import numpy as np
 
 import river
 from river import metrics
-from sympy import public
 
 from sail.utils.progress_bar import SAILProgressBar
 

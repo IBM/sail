@@ -31,7 +31,6 @@ class SAILAutoPipeline(SAILModel, BaseEstimator):
         incremental_training: bool = False,
         drift_detector: Union[None, SAILDriftDetector] = None,
         pipeline_strategy: Union[None, str] = None,
-        cluster_address: str = None,
     ) -> None:
         self.pipeline = pipeline
         self.pipeline_params_grid = pipeline_params_grid
@@ -39,10 +38,9 @@ class SAILAutoPipeline(SAILModel, BaseEstimator):
         self.search_data_size = search_data_size
         self.incremental_training = incremental_training
         self.drift_detector = drift_detector
-        self.cluster_address = cluster_address
 
         self.search_method = self._resolve_search_method(
-            search_method, search_method_params, cluster_address
+            search_method, search_method_params
         )
         self.pipeline_strategy = self._resolve_pipeline_strategy(
             pipeline_strategy, incremental_training
@@ -108,9 +106,7 @@ class SAILAutoPipeline(SAILModel, BaseEstimator):
 
         return X, y
 
-    def _resolve_search_method(
-        self, search_method, search_method_params, cluster_address
-    ):
+    def _resolve_search_method(self, search_method, search_method_params):
         if search_method is None:
             _search_class = SAILTuneGridSearchCV
         elif Type[search_method] in [
@@ -144,7 +140,6 @@ class SAILAutoPipeline(SAILModel, BaseEstimator):
         return _search_class(
             estimator=self.pipeline,
             param_grid=self.pipeline_params_grid,
-            cluster_address=cluster_address,
             **search_method_params,
         )
 

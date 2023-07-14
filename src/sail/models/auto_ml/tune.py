@@ -74,13 +74,15 @@ class SAILTuneGridSearchCV(TuneGridSearchCV):
         num_gpus_per_trial=0,
         keep_best_configurations=1,
         cluster_address=None,
+        storage_path=None,
         **kwargs,
     ):
         super(SAILTuneGridSearchCV, self).__init__(**kwargs)
-        self.keep_best_configurations = keep_best_configurations
-        self.cluster_address = cluster_address
         self.num_cpus_per_trial = num_cpus_per_trial
         self.num_gpus_per_trial = num_gpus_per_trial
+        self.keep_best_configurations = keep_best_configurations
+        self.cluster_address = cluster_address
+        self.storage_path = storage_path
 
     def fit(
         self, X, y=None, warm_start=False, groups=None, tune_params=None, **fit_params
@@ -168,6 +170,7 @@ class SAILTuneGridSearchCV(TuneGridSearchCV):
             stop=stopper,
             config=config,
             fail_fast="raise",
+            storage_path=self.storage_path,
             resources_per_trial={
                 "cpu": self.num_cpus_per_trial,
                 "gpu": self.num_gpus_per_trial,
@@ -257,13 +260,15 @@ class SAILTuneSearchCV(TuneSearchCV):
         num_gpus_per_trial=0,
         keep_best_configurations=1,
         cluster_address=None,
+        storage_path=None,
         **kwargs,
     ):
         super(SAILTuneSearchCV, self).__init__(**kwargs)
-        self.keep_best_configurations = keep_best_configurations
-        self.cluster_address = cluster_address
         self.num_cpus_per_trial = num_cpus_per_trial
         self.num_gpus_per_trial = num_gpus_per_trial
+        self.keep_best_configurations = keep_best_configurations
+        self.cluster_address = cluster_address
+        self.storage_path = storage_path
 
     def fit(
         self, X, y=None, warm_start=False, groups=None, tune_params=None, **fit_params
@@ -335,6 +340,7 @@ class SAILTuneSearchCV(TuneSearchCV):
             num_samples=self.n_trials,
             config=config,
             fail_fast="raise",
+            storage_path=self.storage_path,
             resources_per_trial={
                 "cpu": self.num_cpus_per_trial,
                 "gpu": self.num_gpus_per_trial,

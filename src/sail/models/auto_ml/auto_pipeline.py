@@ -208,7 +208,7 @@ class SAILAutoPipeline(SAILModel, BaseEstimator):
             if os.path.exists(save_location) and os.path.isdir(save_location):
                 shutil.rmtree(save_location)
 
-            LOGGER.info(f"making directory tree {save_location}")
+            LOGGER.debug(f"making directory tree {save_location}")
             os.makedirs(save_location, exist_ok=True)
             if not os.path.exists(save_location):
                 raise Exception(f"target directory {save_location} can not be created!")

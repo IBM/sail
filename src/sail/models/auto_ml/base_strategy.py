@@ -2,7 +2,7 @@ from enum import Enum, auto
 
 import numpy as np
 import ray
-
+import sail
 from sail.drift_detection.drift_detector import SAILDriftDetector
 from sail.utils.logging import configure_logger
 
@@ -175,7 +175,11 @@ class PipelineStrategy:
             + self.search_method.__class__.__qualname__
         )
         LOGGER.info(f"Starting Pipeline tuning with {class_name}")
-        ray.init(address=self.search_method.cluster_address)
+        ray.init(
+            address=self.search_method.cluster_address,
+            namespace=self.search_method.namespace,
+            runtime_env=self.search_method.runtime_env,
+        )
         LOGGER.info(
             f"Cluster resources: Nodes: {len(ray.nodes())}, Cluster CPU: {ray.cluster_resources()['CPU']}, Cluster Memory: {str(format(ray.cluster_resources()['memory'] / (1024 * 1024 * 1024), '.2f')) + ' GB'}"
         )
@@ -188,7 +192,7 @@ class PipelineStrategy:
                 **fit_params,
             )
         except Exception as e:
-            LOGGER.debug(e)
+            LOGGER.info(e)
             LOGGER.info("Pipeline tuning failed. Disconnecting Ray cluster...")
         finally:
             ray.shutdown()

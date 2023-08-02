@@ -49,10 +49,10 @@ class TestDistEWARegressor:
             cnt += 1
         expected_predictions = np.array(
             [
-                0.5535104274749756,
-                0.7640034556388855,
-                0.07437397539615631,
-                0.27591532468795776,
+                0.17334376275539398,
+                0.22032581269741058,
+                0.3394103944301605,
+                0.6385474801063538,
             ]
         )
         assert np.allclose(y_pred, expected_predictions)

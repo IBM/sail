@@ -1,9 +1,9 @@
 import importlib
 from typing import Union, Literal
 import river
-from river.base import DriftDetector
-from river.drift import EDDM, PageHinkley
-
+from river.base import DriftDetector, BinaryDriftDetector
+from river.drift.binary import EDDM
+from river.drift.page_hinkley import PageHinkley
 from sail.utils.logging import configure_logger
 from sail.utils.progress_bar import SAILProgressBar
 
@@ -20,7 +20,9 @@ class SAILDriftDetector:
         self.drift_param = drift_param
 
     def _resolve_drift_detector(self, drift_detector) -> DriftDetector:
-        if isinstance(drift_detector, DriftDetector):
+        if isinstance(drift_detector, DriftDetector) or isinstance(
+            drift_detector, BinaryDriftDetector
+        ):
             return drift_detector
         elif isinstance(drift_detector, str):
             if drift_detector == "auto":
@@ -36,7 +38,7 @@ class SAILDriftDetector:
         else:
             raise TypeError(
                 " SAIL Drift Detector `model` must be an instance or str from "
-                f"{river.drift.__all__} from river.drift module. Got {drift_detector.__module__}.{drift_detector.__qualname__}. Set `auto` to use the default."
+                f"{river.drift.__all__} from river.drift module. Got {drift_detector.__module__}.{drift_detector.__class__.__qualname__}. Set `auto` to use the default."
             )
         return _drift_detector_class()
 

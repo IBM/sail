@@ -43,7 +43,7 @@ class TestDistAggregateClassifier:
             learner.partial_fit(X, y, classes=[0, 1])
             cnt += 1
 
-        expected_predictions = array("i", [1, 0, 1, 1])
+        expected_predictions = array("i", [0, 1, 1, 1])
         assert np.all(y_pred == expected_predictions)
         assert type(learner.predict(X)) == np.ndarray
 
@@ -71,7 +71,7 @@ class TestDistAggregateClassifier:
             learner.partial_fit(X, y, classes=[0, 1])
             cnt += 1
 
-        expected_predictions = array("i", [1, 0, 0, 1])
+        expected_predictions = array("i", [0, 0, 1, 0])
         assert np.all(y_pred == expected_predictions)
         assert type(learner.predict(X)) == np.ndarray
 

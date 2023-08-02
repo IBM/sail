@@ -18,10 +18,10 @@ jobs:
       - name: Checkout sail repo
         uses: actions/checkout@v3
 
-      - name: Install python version 3.8
+      - name: Install python version 3.10
         uses: actions/setup-python@v4
         with:
-          python-version: "3.8.*"
+          python-version: "3.10.*"
           cache: "pip"
 
       - name: Install Sail and its dependencies
@@ -44,10 +44,10 @@ jobs:
   #     - name: Checkout sail repo
   #       uses: actions/checkout@v3
 
-  #     - name: Install python version 3.8
+  #     - name: Install python version 3.10
   #       uses: actions/setup-python@v4
   #       with:
-  #         python-version: "3.8.*"
+  #         python-version: "3.10.*"
   #         cache: "pip"
 
   #     - name: Install sail and its dependencies

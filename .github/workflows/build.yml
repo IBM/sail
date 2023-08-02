@@ -28,9 +28,6 @@ jobs:
         run: |
           pip install ".[all]"
 
-      - name: Install scikit-multiflow
-        run: pip install scikit-multiflow==0.5.3
-
       - name: Run unit tests with pytest
         run: pytest -s -n=auto --tb=native tests
 
@@ -56,9 +53,6 @@ jobs:
   #     - name: Install sail and its dependencies
   #       run: |
   #         pip install ".[all]"
-
-  #     - name: Install scikit-multiflow
-  #       run: pip install scikit-multiflow==0.5.3
 
   #     - name: Run unit tests with pytest
   #       run: pytest -s -n=auto --tb=native tests

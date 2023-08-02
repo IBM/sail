@@ -1,19 +1,16 @@
 import os
 import shutil
 import tempfile
-from pathlib import Path
 
 import numpy as np
 import pandas as pd
 import pytest
-from river import metrics, optim
 from sklearn.impute import SimpleImputer
-
+from river import metrics
 from sail.models.river.forest import (
     AdaptiveRandomForestClassifier,
     AdaptiveRandomForestRegressor,
 )
-from sail.models.river.linear_model import LinearRegression, LogisticRegression
 from sail.pipeline import SAILPipeline
 from sail.transfomers.river.preprocessing import StandardScaler
 

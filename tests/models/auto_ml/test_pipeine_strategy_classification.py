@@ -2,7 +2,7 @@ import numpy as np
 from sail.models.auto_ml.auto_pipeline import SAILAutoPipeline
 from sail.models.auto_ml.tune import SAILTuneGridSearchCV
 from sail.drift_detection.drift_detector import SAILDriftDetector
-from river.drift import EDDM
+from river.drift.binary import EDDM
 
 
 class TestPipelineStrategy:

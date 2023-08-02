@@ -1,8 +1,7 @@
 import typing
 
-import river.ensemble.adaptive_random_forest as adaptive_random_forest
+from river.forest import ARFClassifier, ARFRegressor
 from river import base, metrics
-from river.drift import ADWIN
 from river.tree.splitter import Splitter
 from sail.models.river.base import SailRiverClassifier, SailRiverRegressor
 
@@ -16,32 +15,34 @@ class AdaptiveRandomForestClassifier(SailRiverClassifier):
     def __init__(
         self,
         n_models: int = 10,
-        max_features: typing.Union[bool, str, int] = "sqrt",
+        max_features: bool | str | int = "sqrt",
         lambda_value: int = 6,
-        metric: metrics.base.MultiClassMetric = metrics.Accuracy(),
+        metric: metrics.base.MultiClassMetric | None = None,
         disable_weighted_vote=False,
-        drift_detector: typing.Union[base.DriftDetector, None] = ADWIN(delta=0.001),
-        warning_detector: typing.Union[base.DriftDetector, None] = ADWIN(delta=0.01),
+        drift_detector: base.DriftDetector | None = None,
+        warning_detector: base.DriftDetector | None = None,
         # Tree parameters
         grace_period: int = 50,
-        max_depth: int = None,
+        max_depth: int | None = None,
         split_criterion: str = "info_gain",
         delta: float = 0.01,
         tau: float = 0.05,
         leaf_prediction: str = "nba",
         nb_threshold: int = 0,
-        nominal_attributes: list = None,
-        splitter: Splitter = None,
+        nominal_attributes: list | None = None,
+        splitter: Splitter | None = None,
         binary_split: bool = False,
+        min_branch_fraction: float = 0.01,
+        max_share_to_split: float = 0.99,
         max_size: float = 100.0,
         memory_estimate_period: int = 2_000_000,
         stop_mem_management: bool = False,
         remove_poor_attrs: bool = False,
         merit_preprune: bool = True,
-        seed: int = None,
+        seed: int | None = None,
     ):
         super(AdaptiveRandomForestClassifier, self).__init__(
-            river_estimator=adaptive_random_forest.AdaptiveRandomForestClassifier(
+            river_estimator=ARFClassifier(
                 n_models,
                 max_features,
                 lambda_value,
@@ -59,6 +60,8 @@ class AdaptiveRandomForestClassifier(SailRiverClassifier):
                 nominal_attributes,
                 splitter,
                 binary_split,
+                min_branch_fraction,
+                max_share_to_split,
                 max_size,
                 memory_estimate_period,
                 stop_mem_management,
@@ -72,24 +75,25 @@ class AdaptiveRandomForestClassifier(SailRiverClassifier):
 class AdaptiveRandomForestRegressor(SailRiverRegressor):
     def __init__(
         self,
+        # Forest parameters
         n_models: int = 10,
         max_features="sqrt",
         aggregation_method: str = "median",
         lambda_value: int = 6,
-        metric: metrics.base.RegressionMetric = metrics.MSE(),
+        metric: metrics.base.RegressionMetric | None = None,
         disable_weighted_vote=True,
-        drift_detector: base.DriftDetector = ADWIN(0.001),
-        warning_detector: base.DriftDetector = ADWIN(0.01),
+        drift_detector: base.DriftDetector | None = None,
+        warning_detector: base.DriftDetector | None = None,
         # Tree parameters
         grace_period: int = 50,
-        max_depth: int = None,
+        max_depth: int | None = None,
         delta: float = 0.01,
         tau: float = 0.05,
         leaf_prediction: str = "adaptive",
-        leaf_model: base.Regressor = None,
+        leaf_model: base.Regressor | None = None,
         model_selector_decay: float = 0.95,
-        nominal_attributes: list = None,
-        splitter: Splitter = None,
+        nominal_attributes: list | None = None,
+        splitter: Splitter | None = None,
         min_samples_split: int = 5,
         binary_split: bool = False,
         max_size: float = 500.0,
@@ -97,10 +101,10 @@ class AdaptiveRandomForestRegressor(SailRiverRegressor):
         stop_mem_management: bool = False,
         remove_poor_attrs: bool = False,
         merit_preprune: bool = True,
-        seed: int = None,
+        seed: int | None = None,
     ):
         super(AdaptiveRandomForestRegressor, self).__init__(
-            river_estimator=adaptive_random_forest.AdaptiveRandomForestRegressor(
+            river_estimator=ARFRegressor(
                 n_models,
                 max_features,
                 aggregation_method,

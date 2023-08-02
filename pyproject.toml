@@ -15,7 +15,7 @@ authors = [
     { name = "Dhaval Salwala", email = "dhaval.vinodbhai.salwala@ibm.com" },
     { name = "Seshu Tirupathi", email = "seshutir@ie.ibm.com" },
 ]
-requires-python = ">=3.8"
+requires-python = ">=3.10"
 license = { text = "MIT" }
 classifiers = [
     "Development Status :: 4 - Beta",

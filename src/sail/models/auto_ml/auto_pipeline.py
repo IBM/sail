@@ -124,7 +124,7 @@ class SAILAutoPipeline(SAILModel, BaseEstimator):
         else:
             raise TypeError(
                 "`search_method` must be None or an instance or str from "
-                f"[SAILTuneGridSearchCV, SAILTuneSearchCV] from sail.models.auto_ml.tune. Got {search_method.__module__}.{search_method.__qualname__}. Set `None` to use the default."
+                f"[SAILTuneGridSearchCV, SAILTuneSearchCV] from sail.models.auto_ml.tune. Got {search_method.__module__}.{search_method.__class__.__qualname__}. Set `None` to use the default."
             )
 
         if search_method_params is None:
@@ -162,7 +162,7 @@ class SAILAutoPipeline(SAILModel, BaseEstimator):
         else:
             raise TypeError(
                 "`pipeline_strategy` must be a None, str, "
-                f"or an instance of PipelineStrategy. Got {pipeline_strategy.__module__}.{pipeline_strategy.__qualname__}. Set `None` to use the default."
+                f"or an instance of PipelineStrategy. Got {pipeline_strategy.__module__}.{pipeline_strategy.__class__.__qualname__}. Set `None` to use the default."
             )
 
         return pipeline_strategy_class(

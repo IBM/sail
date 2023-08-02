@@ -35,9 +35,7 @@ class _Model(tf.keras.models.Sequential):
                 return_sequences=True,
                 stateful=True,
                 batch_input_shape=(1, timesteps, num_of_features),
-                kernel_regularizer=tf.keras.regularizers.l2(
-                    regularization_factor
-                ),
+                kernel_regularizer=tf.keras.regularizers.l2(regularization_factor),
             )
         )
         self.add(
@@ -112,10 +110,7 @@ class _Model(tf.keras.models.Sequential):
                 tmp_zval = (tmpresi - curmean) * 1.0 / sqrt(curvar)
                 tmp_pro_conve = st.norm.cdf(tmp_zval)
 
-                if (
-                    tmp_pro_conve > (1 - conf_level)
-                    or tmp_pro_conve < conf_level
-                ):
+                if tmp_pro_conve > (1 - conf_level) or tmp_pro_conve < conf_level:
                     sus_point_bool = True
                     pre_susp_bool = True
                     weight = tmpw
@@ -175,9 +170,9 @@ class _Model(tf.keras.models.Sequential):
             resi_mean = resi_mean * seg_cnt * 1.0 / (seg_cnt + 1) + tmpresi / (
                 seg_cnt + 1
             )
-            resi_sqr = resi_sqr * seg_cnt * 1.0 / (
+            resi_sqr = resi_sqr * seg_cnt * 1.0 / (seg_cnt + 1) + tmpresi * tmpresi / (
                 seg_cnt + 1
-            ) + tmpresi * tmpresi / (seg_cnt + 1)
+            )
             resi_var = resi_sqr - resi_mean * resi_mean
             seg_cnt = seg_cnt + 1
 
@@ -202,9 +197,7 @@ class _Model(tf.keras.models.Sequential):
         #     save_path="plot_wglstm.png",
         # )
 
-        return SimpleNamespace(
-            history={m.name: m.result() for m in self.metrics}
-        )
+        return SimpleNamespace(history={m.name: m.result() for m in self.metrics})
 
     def sliding_window_features(self, cur_pos, dataX, dataY, susp_list):
         winsize = self.window_size
@@ -231,18 +224,13 @@ class _Model(tf.keras.models.Sequential):
                     tmpdiff.append(0.0)
                 else:
                     tmpdiff.append(
-                        abs(
-                            cur_val
-                            - dataX[:, lnormal : lnormal + 1, :][0][0][0]
-                        )
+                        abs(cur_val - dataX[:, lnormal : lnormal + 1, :][0][0][0])
                     )
                     lnormal = i
             else:
                 rsus = i
                 if i >= (cur_pos - winsize):
-                    tmpdiff.append(
-                        abs(cur_val - dataX[:, i - 1 : i, :][0][0][0])
-                    )
+                    tmpdiff.append(abs(cur_val - dataX[:, i - 1 : i, :][0][0][0]))
                 else:
                     tmpdiff.append(abs(0.0))
 
@@ -255,19 +243,13 @@ class _Model(tf.keras.models.Sequential):
                     rnormal = tmp_dta
                 else:
                     tmpdiff[tmp_win] = tmpdiff[tmp_win] + (
-                        abs(
-                            cur_val
-                            - dataX[:, rnormal : rnormal + 1, :][0][0][0]
-                        )
+                        abs(cur_val - dataX[:, rnormal : rnormal + 1, :][0][0][0])
                     )
                     rnormal = tmp_dta
             else:
                 if tmp_dta <= (cur_pos - 1):
                     tmpdiff[tmp_win] = tmpdiff[tmp_win] + (
-                        abs(
-                            cur_val
-                            - dataX[:, tmp_dta + 1 : tmp_dta + 2, :][0][0][0]
-                        )
+                        abs(cur_val - dataX[:, tmp_dta + 1 : tmp_dta + 2, :][0][0][0])
                     )
 
         tmparr = list(zip(tmpdiff, susp_list))
@@ -293,13 +275,7 @@ class _Model(tf.keras.models.Sequential):
         weight_beta = 0.05
 
         if len(suspDiff) != 0 and len(normDiff) != 0:
-            r2 = (
-                1.0
-                * sum(suspDiff)
-                * len(normDiff)
-                / sum(normDiff)
-                / len(suspDiff)
-            )
+            r2 = 1.0 * sum(suspDiff) * len(normDiff) / sum(normDiff) / len(suspDiff)
             if r2 < 5:
                 r2 = 0.0
 
@@ -378,7 +354,7 @@ class WGLSTM(KerasRegressor, KerasSerializationMixin):
         self,
         loss="mse",
         optimizer=tf.keras.optimizers.SGD(
-            learning_rate=0.002, momentum=0.03, decay=0.0, nesterov=True
+            learning_rate=0.002, momentum=0.03, nesterov=True
         ),
         metrics=None,
         epochs=1,

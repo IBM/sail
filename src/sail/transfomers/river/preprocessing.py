@@ -4,6 +4,7 @@ import river.preprocessing.lda as lda
 import river.preprocessing.one_hot as one_hot
 import river.preprocessing.scale as scale
 from sail.transfomers.river.base import BaseRiverTransformer
+import pandas as pd
 
 __all__ = [
     "AdaptiveStandardScaler",
@@ -30,16 +31,12 @@ class FeatureHasher(BaseRiverTransformer):
 
 class PreviousImputer(BaseRiverTransformer):
     def __init__(self):
-        super(PreviousImputer, self).__init__(
-            river_estimator=impute.PreviousImputer()
-        )
+        super(PreviousImputer, self).__init__(river_estimator=impute.PreviousImputer())
 
 
 class StatImputer(BaseRiverTransformer):
     def __init__(self, *imputers):
-        super(StatImputer, self).__init__(
-            river_estimator=impute.StatImputer(*imputers)
-        )
+        super(StatImputer, self).__init__(river_estimator=impute.StatImputer(*imputers))
 
 
 class LDA(BaseRiverTransformer):
@@ -99,29 +96,21 @@ class Binarizer(BaseRiverTransformer):
 
 class MaxAbsScaler(BaseRiverTransformer):
     def __init__(self):
-        super(MaxAbsScaler, self).__init__(
-            river_estimator=scale.MaxAbsScaler()
-        )
+        super(MaxAbsScaler, self).__init__(river_estimator=scale.MaxAbsScaler())
 
 
 class MinMaxScaler(BaseRiverTransformer):
     def __init__(self):
-        super(MinMaxScaler, self).__init__(
-            river_estimator=scale.MinMaxScaler()
-        )
+        super(MinMaxScaler, self).__init__(river_estimator=scale.MinMaxScaler())
 
 
 class Normalizer(BaseRiverTransformer):
     def __init__(self, order=2):
-        super(Normalizer, self).__init__(
-            river_estimator=scale.Normalizer(order)
-        )
+        super(Normalizer, self).__init__(river_estimator=scale.Normalizer(order))
 
 
 class RobustScaler(BaseRiverTransformer):
-    def __init__(
-        self, with_centering=True, with_scaling=True, q_inf=0.25, q_sup=0.75
-    ):
+    def __init__(self, with_centering=True, with_scaling=True, q_inf=0.25, q_sup=0.75):
         super(RobustScaler, self).__init__(
             river_estimator=scale.RobustScaler(
                 with_centering, with_scaling, q_inf, q_sup
@@ -134,3 +123,10 @@ class StandardScaler(BaseRiverTransformer):
         super(StandardScaler, self).__init__(
             river_estimator=scale.StandardScaler(with_std)
         )
+
+    def transform(self, X):
+        features = X.columns
+        X = super().transform(X)
+        X = pd.DataFrame.from_records(X)
+        X.columns = features
+        return X

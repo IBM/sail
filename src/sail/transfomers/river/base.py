@@ -1,31 +1,17 @@
 from river.compat import River2SKLTransformer
 from sail.models.river.base import RiverMixin
-from sklearn.utils._set_output import _get_output_config, _safe_set_output
-from itertools import chain
+from sklearn.base import OneToOneFeatureMixin
+from sklearn.utils.validation import _get_feature_names
 
 
-class BaseRiverTransformer(River2SKLTransformer, RiverMixin):
+class BaseRiverTransformer(River2SKLTransformer, RiverMixin, OneToOneFeatureMixin):
     def __init__(self, *args, **Kwargs):
         super(BaseRiverTransformer, self).__init__(*args, **Kwargs)
 
-    def get_feature_names_out(self, input_features=None):
-        """Get output feature names for transformation.
+    def _partial_fit(self, X, y):
+        if not hasattr(self, "n_features_in_"):
+            feature_names_in = _get_feature_names(X)
+            if feature_names_in is not None:
+                self.feature_names_in_ = feature_names_in
 
-        The feature names out will prefixed by the lowercased class name. For
-        example, if the transformer outputs 3 features, then the feature names
-        out are: `["class_name0", "class_name1", "class_name2"]`.
-
-        Parameters
-        ----------
-        input_features : array-like of str or None, default=None
-            Only used to validate feature names with the names seen in :meth:`fit`.
-
-        Returns
-        -------
-        feature_names_out : ndarray of str objects
-            Transformed feature names.
-        """
-        super().check_is_fitted(self, "_n_features_out")
-        return super()._generate_get_feature_names_out(
-            self, self._n_features_out, input_features=input_features
-        )
+        return super()._partial_fit(X, y)

@@ -4,7 +4,6 @@ import river.preprocessing.lda as lda
 import river.preprocessing.one_hot as one_hot
 import river.preprocessing.scale as scale
 from sail.transfomers.river.base import BaseRiverTransformer
-import pandas as pd
 
 __all__ = [
     "AdaptiveStandardScaler",
@@ -123,10 +122,3 @@ class StandardScaler(BaseRiverTransformer):
         super(StandardScaler, self).__init__(
             river_estimator=scale.StandardScaler(with_std)
         )
-
-    def transform(self, X):
-        features = X.columns
-        X = super().transform(X)
-        X = pd.DataFrame.from_records(X)
-        X.columns = features
-        return X

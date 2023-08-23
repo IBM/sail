@@ -2,7 +2,7 @@ import river.feature_extraction.agg as agg
 import river.feature_extraction.kernel_approx as kernel_approx
 import river.feature_extraction.poly as poly
 import river.feature_extraction.vectorize as vectorize
-from river.compat import River2SKLTransformer
+from sail.transformers.river.base import BaseRiverTransformer
 import typing
 from river import stats
 
@@ -16,7 +16,7 @@ __all__ = [
 ]
 
 
-class Agg(River2SKLTransformer):
+class Agg(BaseRiverTransformer):
     def __init__(
         self,
         on: str,
@@ -32,7 +32,7 @@ class Agg(River2SKLTransformer):
         )
 
 
-class TargetAgg(River2SKLTransformer):
+class TargetAgg(BaseRiverTransformer):
     def __init__(
         self,
         by: typing.Optional[typing.Union[str, typing.List[str]]],
@@ -48,14 +48,14 @@ class TargetAgg(River2SKLTransformer):
         )
 
 
-class RBFSampler(River2SKLTransformer):
+class RBFSampler(BaseRiverTransformer):
     def __init__(self, gamma=1.0, n_components=100, seed: int = None):
         super(RBFSampler, self).__init__(
             river_estimator=kernel_approx.RBFSampler(gamma, n_components, seed)
         )
 
 
-class PolynomialExtender(River2SKLTransformer):
+class PolynomialExtender(BaseRiverTransformer):
     def __init__(
         self,
         degree=2,
@@ -70,7 +70,7 @@ class PolynomialExtender(River2SKLTransformer):
         )
 
 
-class TFIDF(River2SKLTransformer):
+class TFIDF(BaseRiverTransformer):
     def __init__(
         self,
         normalize=True,
@@ -94,7 +94,7 @@ class TFIDF(River2SKLTransformer):
         )
 
 
-class BagOfWords(River2SKLTransformer):
+class BagOfWords(BaseRiverTransformer):
     def __init__(
         self,
         on: str = None,

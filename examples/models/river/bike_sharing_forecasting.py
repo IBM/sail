@@ -10,9 +10,9 @@ import numpy as np
 import pandas as pd
 from river import datasets, metrics, optim, stats
 
-from sail.transfomers.river.feature_extraction import TargetAgg
+from sail.transformers.river.feature_extraction import TargetAgg
 from sail.models.river.linear_model import LinearRegression
-from sail.transfomers.river.preprocessing import StandardScaler
+from sail.transformers.river.preprocessing import StandardScaler
 
 # Loading the dataset
 dataset = datasets.Bikes()

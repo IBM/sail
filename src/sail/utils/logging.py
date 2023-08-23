@@ -4,10 +4,11 @@ import sail
 
 
 def configure_logger(
-    package_name: str = "SAIL",
-    logger_name: str = "",
+    logger_name: str,  # avoid setting None as it will invoke root logger
     logging_level=sail.get_logging_level(),
 ):
+    package_name = "SAIL"
+
     if logger_name:
         logger_name = " (" + logger_name + ")"
 

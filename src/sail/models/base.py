@@ -3,7 +3,7 @@ import os
 from sail.utils.logging import configure_logger
 from sail.utils.serialization import load_obj, save_obj
 
-LOGGER = configure_logger()
+LOGGER = configure_logger(logger_name="SAILModel")
 
 
 class SAILModel:

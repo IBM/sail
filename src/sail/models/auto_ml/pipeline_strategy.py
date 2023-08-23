@@ -5,7 +5,7 @@ from sail.models.auto_ml.base_strategy import (
 )
 from sail.utils.logging import configure_logger
 
-LOGGER = configure_logger()
+LOGGER = configure_logger(logger_name="PipelineStrategy")
 
 
 class DetectAndIncrement(PipelineStrategy):

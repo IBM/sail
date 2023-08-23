@@ -15,7 +15,7 @@ from sail.models.river.forest import (
 )
 from sail.models.river.linear_model import LinearRegression, LogisticRegression
 from sail.pipeline import SAILPipeline
-from sail.transfomers.river.preprocessing import StandardScaler
+from sail.transformers.river.preprocessing import StandardScaler
 
 
 @pytest.fixture(scope="module", autouse=True)

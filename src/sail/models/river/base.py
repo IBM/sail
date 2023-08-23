@@ -1,18 +1,15 @@
-import copy
 import inspect
 import typing
 
 from river.compat import (
     River2SKLClassifier,
     River2SKLRegressor,
-    river_to_sklearn,
 )
-from sklearn import preprocessing, utils
 
 from sail.models.base import SAILModel
 from sail.utils.logging import configure_logger
 
-LOGGER = configure_logger()
+LOGGER = configure_logger(logger_name="River")
 
 
 class RiverMixin:

@@ -2,7 +2,7 @@ from sail.utils.logging import configure_logger
 import os
 from pathlib import Path
 
-LOGGER = configure_logger()
+LOGGER = configure_logger(logger_name="PyTorch")
 
 
 class TorchSerializationMixin:

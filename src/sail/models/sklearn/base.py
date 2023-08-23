@@ -2,7 +2,7 @@ import os
 from sail.utils.serialization import save_obj, load_obj
 from sail.utils.logging import configure_logger
 
-LOGGER = configure_logger()
+LOGGER = configure_logger(logger_name="Sklearn")
 
 
 def save(model, model_folder):

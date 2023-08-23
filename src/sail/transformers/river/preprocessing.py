@@ -3,7 +3,7 @@ import river.preprocessing.impute as impute
 import river.preprocessing.lda as lda
 import river.preprocessing.one_hot as one_hot
 import river.preprocessing.scale as scale
-from sail.transfomers.river.base import BaseRiverTransformer
+from sail.transformers.river.base import BaseRiverTransformer
 
 __all__ = [
     "AdaptiveStandardScaler",

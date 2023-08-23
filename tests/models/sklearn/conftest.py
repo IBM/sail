@@ -3,7 +3,7 @@ import pytest
 import tempfile
 import shutil
 from sklearn import datasets
-from sail.transfomers.sklearn.preprocessing import StandardScaler
+from sail.transformers.sklearn.preprocessing import StandardScaler
 
 
 @pytest.fixture(autouse=True)

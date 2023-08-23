@@ -6,7 +6,7 @@ import sail
 from sail.drift_detection.drift_detector import SAILDriftDetector
 from sail.utils.logging import configure_logger
 
-LOGGER = configure_logger()
+LOGGER = configure_logger(logger_name="PipelineStrategy")
 
 
 class PipelineActionType(Enum):

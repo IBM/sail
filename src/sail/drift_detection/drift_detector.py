@@ -7,7 +7,7 @@ from river.drift.page_hinkley import PageHinkley
 from sail.utils.logging import configure_logger
 from sail.utils.progress_bar import SAILProgressBar
 
-LOGGER = configure_logger()
+LOGGER = configure_logger(logger_name="DriftDetector")
 
 
 class SAILDriftDetector:

@@ -4,7 +4,7 @@ from sail.utils.serialization import save_obj, load_obj
 from sail.utils.logging import configure_logger
 from scikeras.wrappers import KerasRegressor
 
-LOGGER = configure_logger()
+LOGGER = configure_logger(logger_name="TF_Keras")
 
 
 class KerasSerializationMixin:

@@ -4,6 +4,7 @@ import river.preprocessing.lda as lda
 import river.preprocessing.one_hot as one_hot
 import river.preprocessing.scale as scale
 from sail.transformers.river.base import BaseRiverTransformer
+from sklearn.base import OneToOneFeatureMixin
 
 __all__ = [
     "AdaptiveStandardScaler",
@@ -79,7 +80,7 @@ class OneHotEncoder(BaseRiverTransformer):
         )
 
 
-class AdaptiveStandardScaler(BaseRiverTransformer):
+class AdaptiveStandardScaler(OneToOneFeatureMixin, BaseRiverTransformer):
     def __init__(self, alpha=0.3):
         super(AdaptiveStandardScaler, self).__init__(
             river_estimator=scale.AdaptiveStandardScaler(alpha)
@@ -117,7 +118,7 @@ class RobustScaler(BaseRiverTransformer):
         )
 
 
-class StandardScaler(BaseRiverTransformer):
+class StandardScaler(OneToOneFeatureMixin, BaseRiverTransformer):
     def __init__(self, with_std=True):
         super(StandardScaler, self).__init__(
             river_estimator=scale.StandardScaler(with_std)

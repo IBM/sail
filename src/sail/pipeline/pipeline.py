@@ -22,6 +22,7 @@ class SAILPipeline(Pipeline):
         self,
         steps: List[Tuple[str, Any]],
         scoring=None,
+        memory=None,
         verbosity: int = 1,
     ):
         """[summary]
@@ -31,7 +32,7 @@ class SAILPipeline(Pipeline):
             scoring: pipeline score metric
             verbosity: verbosity level for training logs. 0 (No logs) is default.
         """
-        super(SAILPipeline, self).__init__(steps, verbose=False)
+        super(SAILPipeline, self).__init__(steps, memory=memory, verbose=False)
         self.scoring = scoring
         self._scorer = self._validate_and_get_scorer(scoring, steps[-1][1])
         self.verbosity = verbosity

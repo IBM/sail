@@ -40,18 +40,21 @@ for i in range(X.shape[0]):
     x = X.iloc[i]
 
     # Here we apply the incremental StandarScaler to update the values and transform the new example
-    x = np.asarray(list(scaler.learn_one(x).transform_one(x).values())).reshape(1, -1)
+    x_final = np.asarray(list(scaler.transform_one(x).values())).reshape(1, -1)
+
+    if i > 0:
+        # Predicting
+        yhat = model.predict(x_final)
+
+        # Update the metric
+        metric.update([y[i]], yhat)
+        if i % 10000 == 0:
+            print("MAE after", i, "iterations", metric.get())
 
     # Partial_fit to update the linear regression's parameters
-    model = model.partial_fit(x, [y[i]])
+    model = model.partial_fit(x_final, [y[i]])
 
-    # Predicting
-    yhat = model.predict(x)
-
-    # Update the metric
-    metric.update([y[i]], yhat)
-    if i % 10000 == 0:
-        print("MAE after", i, "iterations", metric.get())
+    scaler.learn_one(x)
 
 print("Finally, MAE:", metric.get())
 
@@ -84,20 +87,22 @@ for i in range(X.shape[0]):
     input_x = x.drop(["station", "hour", "moment"])
 
     #  Scaling up the current example
-    input_x = np.asarray(
-        list(scaler.learn_one(input_x).transform_one(input_x).values())
-    ).reshape(1, -1)
+    input_x_final = np.asarray(list(scaler.transform_one(input_x).values())).reshape(
+        1, -1
+    )
+
+    if i > 0:
+        yhat = model.predict(input_x_final)
+        metric.update([y[i]], yhat)
+        if i % 10000 == 0:
+            print("MAE after", i, "iterations", metric.get())
 
     # Partially fitting the model
-    model = model.partial_fit(input_x, [y[i]])
-
-    yhat = model.predict(input_x)
-
-    metric.update([y[i]], yhat)
-    if i % 10000 == 0:
-        print("MAE after", i, "iterations", metric.get())
+    model = model.partial_fit(input_x_final, [y[i]])
 
     agg = agg.learn_one(x, y[i])  # Updating the average number of bikes
+
+    scaler.learn_one(input_x)
 
 print("Finally, MAE:", metric.get())
 

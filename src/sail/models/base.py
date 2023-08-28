@@ -7,6 +7,9 @@ LOGGER = configure_logger(logger_name="SAILModel")
 
 
 class SAILModel:
+    def fit(self):
+        raise NotImplementedError
+
     def partial_fit(self):
         raise NotImplementedError
 

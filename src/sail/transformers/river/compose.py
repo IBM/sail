@@ -1,34 +1,13 @@
-from .base import SAILTransformer
-import numpy as np
-import pandas as pd
+from river import base, compose
+from sail.transformers.river.base import BaseRiverTransformer
 from sklearn.base import ClassNamePrefixFeaturesOutMixin
 from sklearn.utils.validation import check_is_fitted
 
 
-class Polar2CartTransformer(ClassNamePrefixFeaturesOutMixin, SAILTransformer):
-    def __init__(self, n, features=None, suffix_x="x", suffix_y="y") -> None:
-        super(Polar2CartTransformer, self).__init__()
-        self.n = n
-        self.features = features
-        self.suffix_x = suffix_x
-        self.suffix_y = suffix_y
+class Select(ClassNamePrefixFeaturesOutMixin, BaseRiverTransformer):
+    def __init__(self, *keys: tuple[base.typing.FeatureName]):
+        super(Select, self).__init__(river_estimator=compose.Select(*keys))
         self.validation_params["cast_to_ndarray"] = False
-
-    def _partial_fit(self, X, y=None):
-        return self
-
-    def _transform(self, X, y=None, copy=None):
-        new_df = pd.DataFrame()
-
-        features = self.features if self.features else new_df.columns
-        for feature in features:
-            name_x = feature + "_" + self.suffix_x
-            new_df[name_x] = np.cos(2 * np.pi * X[feature] / self.n)
-            name_y = feature + "_" + self.suffix_y
-            new_df[name_y] = np.sin(2 * np.pi * X[feature] / self.n)
-
-        self.features_ = list(new_df.columns)
-        return new_df.to_numpy()
 
     def get_feature_names_out(self, input_features=None):
         """Get output feature names for transformation.
@@ -51,4 +30,4 @@ class Polar2CartTransformer(ClassNamePrefixFeaturesOutMixin, SAILTransformer):
             Same as input features.
         """
         check_is_fitted(self, "n_features_in_")
-        return self.features_
+        return list(self.instance_.keys)

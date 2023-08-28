@@ -16,19 +16,23 @@ class BaseRiverTransformer(RiverAttributeMixin, River2SKLTransformer):
     def _partial_fit(self, X, y=None):
         # Check the inputs
         first_call = not hasattr(self, "n_features_in_")
-        validated_X_y = self._validate_data(
-            X,
-            "no_validation" if y is None else y,
-            **self.validation_params,
-            reset=first_call,
-            **SKLEARN_INPUT_X_PARAMS,
-            **SKLEARN_INPUT_Y_PARAMS,
-        )
 
         if y is None:
-            X = validated_X_y
+            X = self._validate_data(
+                X,
+                **self.validation_params,
+                reset=first_call,
+                **SKLEARN_INPUT_X_PARAMS,
+            )
         else:
-            X, y = validated_X_y
+            X, y = self._validate_data(
+                X,
+                y,
+                **self.validation_params,
+                reset=first_call,
+                **SKLEARN_INPUT_X_PARAMS,
+                **SKLEARN_INPUT_Y_PARAMS,
+            )
 
         # scikit-learn's convention is that fit shouldn't mutate the input parameters; we have to deep copy the provided estimator in order to respect this convention
         if not hasattr(self, "instance_"):

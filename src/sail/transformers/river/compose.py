@@ -5,7 +5,7 @@ from sklearn.utils.validation import check_is_fitted
 
 
 class Select(ClassNamePrefixFeaturesOutMixin, BaseRiverTransformer):
-    def __init__(self, *keys: tuple[base.typing.FeatureName]):
+    def __init__(self, keys: List[base.typing.FeatureName]):
         super(Select, self).__init__(river_estimator=compose.Select(*keys))
         self.validation_params["cast_to_ndarray"] = False
 

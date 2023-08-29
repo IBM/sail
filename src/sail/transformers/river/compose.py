@@ -2,6 +2,7 @@ from river import base, compose
 from sail.transformers.river.base import BaseRiverTransformer
 from sklearn.base import ClassNamePrefixFeaturesOutMixin
 from sklearn.utils.validation import check_is_fitted
+from typing import List
 
 
 class Select(ClassNamePrefixFeaturesOutMixin, BaseRiverTransformer):

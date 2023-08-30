@@ -64,7 +64,13 @@ class SAILPipeline(Pipeline):
             y = y.to_numpy()
         return self._scorer.score(y, y_preds, sample_weight, verbose=self.verbosity)
 
-    def progressive_score(self, X, y, sample_weight=1.0, detached=False, verbose=1):
+    def score_estimator(self, X, y, sample_weight=1.0):
+        y_preds = self._final_estimator.predict(X)
+        if isinstance(y, pd.Series):
+            y = y.to_numpy()
+        return self._scorer.score(y, y_preds, sample_weight, verbose=self.verbosity)
+
+    def _progressive_score(self, X, y, sample_weight=1.0, detached=False, verbose=1):
         y_pred = self.predict(X)
         if isinstance(y, pd.Series):
             y = y.to_numpy()
@@ -77,7 +83,7 @@ class SAILPipeline(Pipeline):
 
     def partial_fit(self, X, y=None, **fit_params):
         if self.__sklearn_is_fitted__():
-            self.progressive_score(X, y, verbose=0)
+            self._progressive_score(X, y, verbose=0)
         self._fit(X, y, warm_start=True, **fit_params)
 
     def _fit(self, X, y=None, warm_start=None, **fit_params):
@@ -190,7 +196,7 @@ class SAILPipeline(Pipeline):
                     fit_params_last_step.pop("classes")
                 self._final_estimator.fit(X, y, **fit_params_last_step)
                 progress.update()
-                progress.update_params("Score", self.score(X, y))
+                progress.update_params("Score", self.score_estimator(X, y))
 
     def save(self, model_folder, name="sail_pipeline", overwrite=True) -> str:
         """

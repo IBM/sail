@@ -8,6 +8,7 @@ from typing import List
 class Select(ClassNamePrefixFeaturesOutMixin, BaseRiverTransformer):
     def __init__(self, keys: List[base.typing.FeatureName]):
         super(Select, self).__init__(river_estimator=compose.Select(*keys))
+        self.keys = keys
         self.validation_params["cast_to_ndarray"] = False
 
     def get_feature_names_out(self, input_features=None):

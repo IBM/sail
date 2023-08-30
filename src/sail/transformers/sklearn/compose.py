@@ -69,16 +69,19 @@ class ColumnTransformer(compose.ColumnTransformer):
             any result is a sparse matrix, everything will be converted to
             sparse matrices.
         """
-        self._check_feature_names(X, reset=True)
+        first_call = not hasattr(self, "n_features_in_")
+        self._check_feature_names(X, reset=first_call)
 
         X = compose._column_transformer._check_X(X)
         # set n_features_in_ attribute
-        self._check_n_features(X, reset=True)
+        self._check_n_features(X, reset=first_call)
         self._validate_transformers()
         self._validate_column_callables(X)
         self._validate_remainder(X)
 
-        result = self._fit_transform(X, y, _partial_fit_transform_one)
+        result = self._fit_transform(
+            X, y, _partial_fit_transform_one, fitted=not first_call
+        )
 
         if not result:
             self._update_fitted_transformers([])

@@ -2,7 +2,7 @@ import copy
 import importlib
 import inspect
 import sys
-
+from typing import Literal
 import numpy as np
 
 import river
@@ -14,10 +14,10 @@ from sail.utils.progress_bar import SAILProgressBar
 class SAILModelScorer:
     def __init__(
         self,
-        scoring=None,
-        estimator_type=None,
-        sample_weight=1.0,
-        pipeline_mode=False,
+        scoring: str | None = None,
+        estimator_type: Literal["regressor", "classifier", "clusterer"] | None = None,
+        sample_weight: float = 1.0,
+        pipeline_mode: bool = False,
     ) -> None:
         self.scoring = scoring
         self.estimator_type = estimator_type
@@ -39,15 +39,20 @@ class SAILModelScorer:
             return metrics.Completeness()
         else:
             raise Exception(
-                "Invalid Estimator type. Last step in the pipeline can only be a regressor, classifier or clusterer"
+                f"Invalid Estimator type. Estimator can only be a regressor, classifier or clusterer. Given estimator type: {estimator_type}."
             )
 
     def _resolve_scoring(self, scoring, estimator_type):
         assert not (
             scoring == estimator_type == None
         ), "Either scoring or estimator_type must be a non null value."
+
         if scoring is None:
+            assert (
+                estimator_type != "passthrough",
+            ), "Scoring cannot be None when the estimator_type is set to passthrough"
             return self.get_default_scorer(estimator_type)
+
         try:
             if isinstance(scoring, str):
                 module = importlib.import_module("river.metrics")

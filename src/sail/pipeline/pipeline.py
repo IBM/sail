@@ -1,7 +1,7 @@
 import os
 import shutil
 from typing import Any, List, Tuple
-
+from sklearn.utils.metaestimators import available_if
 import numpy as np
 import pandas as pd
 from sklearn import utils
@@ -37,60 +37,68 @@ class SAILPipeline(Pipeline):
         self._scorer = self._validate_and_get_scorer(scoring, steps[-1][1])
         self.verbosity = verbosity
 
-    def _validate_and_get_scorer(self, scoring, estimator):
-        if scoring is None:
-            estimator_type = (
-                None if estimator == "passthrough" else estimator._estimator_type
-            )
-            assert (
-                estimator_type is not None
-            ), "SAILPipeline.scoring cannot be None when the estimator is set to passthrough in SAILPipeline.steps."
-
-        return SAILModelScorer(
-            scoring=scoring,
-            estimator_type=None
-            if estimator == "passthrough"
-            else estimator._estimator_type,
-            pipeline_mode=True,
+    def _can_fit_transform(self):
+        return (
+            self._final_estimator == "passthrough"
+            or hasattr(self._final_estimator, "transform")
+            or hasattr(self._final_estimator, "fit_transform")
         )
+
+    def _validate_and_get_scorer(self, scoring, estimator):
+        estimator_type = None
+
+        if estimator == "passthrough":
+            estimator_type = estimator
+        elif hasattr(estimator, "_estimator_type"):
+            estimator_type = estimator._estimator_type
+
+        if estimator_type:
+            estimator_type = SAILModelScorer(
+                scoring=scoring,
+                estimator_type=estimator_type,
+                pipeline_mode=True,
+            )
+
+        return estimator_type
 
     @property
     def get_progressive_score(self):
-        return self._scorer.get_progressive_score
+        if self._scorer:
+            return self._scorer.get_progressive_score
 
     def score(self, X, y, sample_weight=1.0):
-        y_preds = self.predict(X)
-        if isinstance(y, pd.Series):
-            y = y.to_numpy()
-        return self._scorer.score(y, y_preds, sample_weight, verbose=self.verbosity)
+        if self._scorer:
+            y_preds = self.predict(X)
+            if isinstance(y, pd.Series):
+                y = y.to_numpy()
+            return self._scorer.score(y, y_preds, sample_weight, verbose=self.verbosity)
 
-    def score_estimator(self, X, y, sample_weight=1.0):
-        y_preds = self._final_estimator.predict(X)
-        if isinstance(y, pd.Series):
-            y = y.to_numpy()
-        return self._scorer.score(y, y_preds, sample_weight, verbose=self.verbosity)
+    def score_estimator(self, X, y, sample_weight=1.0, verbose=1):
+        if self._scorer:
+            y_preds = self._final_estimator.predict(X)
+            if isinstance(y, pd.Series):
+                y = y.to_numpy()
+            return self._scorer.score(y, y_preds, sample_weight, verbose=verbose)
 
     def _progressive_score(self, X, y, sample_weight=1.0, detached=False, verbose=1):
-        y_pred = self.predict(X)
-        if isinstance(y, pd.Series):
-            y = y.to_numpy()
-        return self._scorer.progressive_score(
-            y, y_pred, sample_weight, detached, verbose
-        )
+        if self._scorer:
+            y_pred = self.predict(X)
+            if isinstance(y, pd.Series):
+                y = y.to_numpy()
+            return self._scorer.progressive_score(
+                y, y_pred, sample_weight, detached, verbose
+            )
 
     def fit(self, X, y=None, **fit_params):
-        fit_params_steps = self._check_fit_params(**fit_params)
-        self._fit(X, y, warm_start=False, **fit_params_steps)
+        self._fit(X, y, warm_start=False, **fit_params)
 
     def partial_fit(self, X, y=None, **fit_params):
         if self.__sklearn_is_fitted__():
             self._progressive_score(X, y, verbose=0)
-        fit_params_steps = self._check_fit_params(**fit_params)
-        self._fit(X, y, warm_start=True, **fit_params_steps)
+        self._fit(X, y, warm_start=True, **fit_params)
 
-    def _fit(self, X, y=None, warm_start=None, **fit_params_steps):
-        Xh = X.copy()
-        yh = y.copy()
+    def _fit(self, X, y=None, warm_start=None, **fit_params):
+        fit_params_steps = self._check_fit_params(**fit_params)
         # shallow copy of steps - this should really be steps_
         self.steps = list(self.steps)
         self._validate_steps()
@@ -107,6 +115,7 @@ class SAILPipeline(Pipeline):
             return transformed_X, transformer
 
         fit_transform_one_cached = memory.cache(_fit_transform_one)
+
         with SAILProgressBar(
             steps=len(list(self._iter(with_final=True, filter_passthrough=True))),
             desc=f"SAIL Pipeline Partial fit" if warm_start else f"SAIL Pipeline fit",
@@ -144,8 +153,9 @@ class SAILPipeline(Pipeline):
 
                 progress.update()
 
+            # call fit / partial_fit on the final estimator
             with _print_elapsed_time(
-                "Pipeline", self._log_message(len(self.steps) - 1)
+                "SAIL-FinalEstimator", self._log_message(len(self.steps) - 1)
             ):
                 if self._final_estimator != "passthrough":
                     progress.append_desc(f"[{self.steps[-1][0]}]")
@@ -154,11 +164,11 @@ class SAILPipeline(Pipeline):
                     )
                 progress.update()
 
-            # update score for fit() call.
-            if not warm_start:
-                progress.update_params("Score", self.score(Xh, yh))
-            else:
+            # Update progress bar score after fit().
+            if warm_start:
                 progress.update_params("P_Score", self.get_progressive_score)
+            else:
+                progress.update_params("Score", self.score_estimator(X, y, verbose=0))
 
         return self
 
@@ -186,6 +196,8 @@ class SAILPipeline(Pipeline):
                         f"Final Estimator: '{self.steps[-1][0]}' does not implement partial_fit()."
                     )
                 self._final_estimator.partial_fit(X, y, **fit_params_last_step)
+
+                # Update progress bar
                 progress.update()
                 progress.update_params("P_Score", self.get_progressive_score)
             else:
@@ -193,11 +205,69 @@ class SAILPipeline(Pipeline):
                     raise AttributeError(
                         f"Final Estimator '{self.steps[-1][0]}' does not implement fit()."
                     )
-                if "classes" in fit_params_last_step:
-                    fit_params_last_step.pop("classes")
+                fit_params_last_step.pop("classes", None)
                 self._final_estimator.fit(X, y, **fit_params_last_step)
+
+                # Update progress bar
                 progress.update()
-                progress.update_params("Score", self.score_estimator(X, y))
+                if verbose == 1:
+                    progress.update_params(
+                        "Score", self.score_estimator(X, y, verbose=verbose)
+                    )
+
+    @available_if(_can_fit_transform)
+    def fit_transform(self, X, y=None, **fit_params):
+        """Fit the model and transform with the final estimator.
+
+        Parameters
+        ----------
+        X : iterable
+            Training data. Must fulfill input requirements of first step of the
+            pipeline.
+
+        y : iterable, default=None
+            Training targets. Must fulfill label requirements for all steps of
+            the pipeline.
+
+        **fit_params : dict of string -> object
+            Parameters passed to the ``fit`` method of each step, where
+            each parameter name is prefixed such that parameter ``p`` for step
+            ``s`` has key ``s__p``.
+
+        Returns
+        -------
+        Xt : ndarray of shape (n_samples, n_transformed_features)
+            Transformed samples.
+        """
+        self.fit(X, y, **fit_params)
+        return self.transform(X)
+
+    @available_if(_can_fit_transform)
+    def partial_fit_transform(self, X, y=None, **fit_params):
+        """Partial Fit the model and transform with the final estimator.
+
+        Parameters
+        ----------
+        X : iterable
+            Training data. Must fulfill input requirements of first step of the
+            pipeline.
+
+        y : iterable, default=None
+            Training targets. Must fulfill label requirements for all steps of
+            the pipeline.
+
+        **fit_params : dict of string -> object
+            Parameters passed to the ``fit`` method of each step, where
+            each parameter name is prefixed such that parameter ``p`` for step
+            ``s`` has key ``s__p``.
+
+        Returns
+        -------
+        Xt : ndarray of shape (n_samples, n_transformed_features)
+            Transformed samples.
+        """
+        self.partial_fit(X, y, **fit_params)
+        return self.transform(X)
 
     def save(self, model_folder, name="sail_pipeline", overwrite=True) -> str:
         """

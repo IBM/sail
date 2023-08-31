@@ -20,7 +20,7 @@ class Polar2CartTransformer(ClassNamePrefixFeaturesOutMixin, SAILTransformer):
     def _transform(self, X, y=None, copy=None):
         new_df = pd.DataFrame()
 
-        features = self.features if self.features else new_df.columns
+        features = self.features if self.features else X.columns
         for feature in features:
             name_x = feature + "_" + self.suffix_x
             new_df[name_x] = np.cos(2 * np.pi * X[feature] / self.n)

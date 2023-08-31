@@ -79,17 +79,18 @@ class SAILPipeline(Pipeline):
         )
 
     def fit(self, X, y=None, **fit_params):
-        self._fit(X, y, warm_start=False, **fit_params)
+        fit_params_steps = self._check_fit_params(**fit_params)
+        self._fit(X, y, warm_start=False, **fit_params_steps)
 
     def partial_fit(self, X, y=None, **fit_params):
         if self.__sklearn_is_fitted__():
             self._progressive_score(X, y, verbose=0)
-        self._fit(X, y, warm_start=True, **fit_params)
+        fit_params_steps = self._check_fit_params(**fit_params)
+        self._fit(X, y, warm_start=True, **fit_params_steps)
 
-    def _fit(self, X, y=None, warm_start=None, **fit_params):
+    def _fit(self, X, y=None, warm_start=None, **fit_params_steps):
         Xh = X.copy()
         yh = y.copy()
-        fit_params_steps = self._check_fit_params(**fit_params)
         # shallow copy of steps - this should really be steps_
         self.steps = list(self.steps)
         self._validate_steps()

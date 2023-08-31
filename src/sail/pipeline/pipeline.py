@@ -38,10 +38,15 @@ class SAILPipeline(Pipeline):
         self.verbosity = verbosity
 
     def _can_fit_transform(self):
-        return (
-            self._final_estimator == "passthrough"
-            or hasattr(self._final_estimator, "transform")
-            or hasattr(self._final_estimator, "fit_transform")
+        return self._final_estimator == "passthrough" or (
+            hasattr(self._final_estimator, "fit")
+            and hasattr(self._final_estimator, "transform")
+        )
+
+    def _can_parital_fit_transform(self):
+        return self._final_estimator == "passthrough" or (
+            hasattr(self._final_estimator, "partial_fit")
+            and hasattr(self._final_estimator, "transform")
         )
 
     def _validate_and_get_scorer(self, scoring, estimator):
@@ -165,10 +170,13 @@ class SAILPipeline(Pipeline):
                 progress.update()
 
             # Update progress bar score after fit().
-            if warm_start:
-                progress.update_params("P_Score", self.get_progressive_score)
-            else:
-                progress.update_params("Score", self.score_estimator(X, y, verbose=0))
+            if self.verbosity:
+                if warm_start:
+                    progress.update_params("P_Score", self.get_progressive_score)
+                else:
+                    progress.update_params(
+                        "Score", self.score_estimator(X, y, verbose=0)
+                    )
 
         return self
 
@@ -198,8 +206,9 @@ class SAILPipeline(Pipeline):
                 self._final_estimator.partial_fit(X, y, **fit_params_last_step)
 
                 # Update progress bar
-                progress.update()
-                progress.update_params("P_Score", self.get_progressive_score)
+                if verbose == 1:
+                    progress.update()
+                    progress.update_params("P_Score", self.get_progressive_score)
             else:
                 if not hasattr(self._final_estimator, "fit"):
                     raise AttributeError(
@@ -209,10 +218,10 @@ class SAILPipeline(Pipeline):
                 self._final_estimator.fit(X, y, **fit_params_last_step)
 
                 # Update progress bar
-                progress.update()
                 if verbose == 1:
+                    progress.update()
                     progress.update_params(
-                        "Score", self.score_estimator(X, y, verbose=verbose)
+                        "Score", self.score_estimator(X, y, verbose=0)
                     )
 
     @available_if(_can_fit_transform)
@@ -242,7 +251,7 @@ class SAILPipeline(Pipeline):
         self.fit(X, y, **fit_params)
         return self.transform(X)
 
-    @available_if(_can_fit_transform)
+    @available_if(_can_parital_fit_transform)
     def partial_fit_transform(self, X, y=None, **fit_params):
         """Partial Fit the model and transform with the final estimator.
 

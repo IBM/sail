@@ -5,7 +5,7 @@ from typing import Type, Union
 
 import numpy as np
 from sklearn.base import BaseEstimator
-from sklearn.utils import check_array
+from sklearn.utils import check_array, check_X_y
 
 from sail.drift_detection.drift_detector import SAILDriftDetector
 from sail.models.auto_ml.base_strategy import PipelineActionType, PipelineStrategy
@@ -93,17 +93,24 @@ class SAILAutoPipeline(SAILModel, BaseEstimator):
 
         return fitted
 
-    def _validate_is_2darray(self, X, y=None):
-        X = check_array(X, ensure_2d=False)
+    def _validate_X_y(self, X, y=None):
         if len(X.shape) == 1:
             X = X.reshape((1, X.shape[0]))
-            if y is not None:
-                y = check_array(
-                    np.array(y, ndmin=1),
-                    ensure_2d=False,
-                )
 
-        return X, y
+        X_new = X.copy()
+        datetime_cols = list(X_new.select_dtypes(include="datetime64[ns]"))
+        X_new = X_new.drop(datetime_cols, axis=1)
+
+        if y is None:
+            _ = check_array(
+                X_new,
+                dtype=None,
+                input_name="X",
+            )
+            return X
+        else:
+            _, y = check_X_y(X_new, y, dtype=None)
+            return X, y
 
     def _resolve_search_method(self, search_method, search_method_params):
         if search_method is None:
@@ -173,12 +180,12 @@ class SAILAutoPipeline(SAILModel, BaseEstimator):
         )
 
     def train(self, X, y=None, **fit_params):
-        X, y = self._validate_is_2darray(X, y)
+        X, y = self._validate_X_y(X, y)
         self.pipeline_strategy.next(X, y, **fit_params)
 
     def predict(self, X, **predict_params):
         if self.check_is_fitted("predict()"):
-            X, _ = self._validate_is_2darray(X)
+            X = self._validate_X_y(X)
             return self.best_pipeline.predict(X, **predict_params)
 
     def score(self, X, y=None, sample_weight=1.0) -> float:

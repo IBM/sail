@@ -17,11 +17,10 @@ class EncodeDateTransformer(ClassNamePrefixFeaturesOutMixin, SAILTransformer):
         return self
 
     def _transform(self, X, y=None, copy=None):
-        new_df = pd.DataFrame()
-
         if self.datetime_col not in X.columns:
             raise Exception(f"Datetime column: {self.datetime_col} not available in X.")
 
+        new_df = pd.DataFrame()
         for field in self.temporal_fields:
             if "time" == field:
                 new_df[self.col + field] = (

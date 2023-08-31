@@ -2,9 +2,9 @@ from enum import Enum, auto
 
 import numpy as np
 import ray
-import sail
 from sail.drift_detection.drift_detector import SAILDriftDetector
 from sail.utils.logging import configure_logger
+import pandas as pd
 
 LOGGER = configure_logger(logger_name="PipelineStrategy")
 
@@ -128,7 +128,7 @@ class PipelineStrategy:
         ):
             self.action_separator()
             if self.incremental_training:
-                score = self._best_pipeline.progressive_score(X, y, detached=True)
+                score = self._best_pipeline._progressive_score(X, y, detached=True)
             else:
                 score = self._best_pipeline.score(X, y)
 
@@ -155,7 +155,10 @@ class PipelineStrategy:
             self._input_X = X
             self._input_y = y
         else:
-            self._input_X = np.vstack((self._input_X, X))
+            if isinstance(self._input_X, pd.DataFrame):
+                self._input_X = pd.concat([self._input_X, X])
+            else:
+                self._input_X = np.vstack((self._input_X, X))
             self._input_y = np.hstack((self._input_y, y))
 
         if self._input_X.shape[0] < self.search_data_size:
@@ -192,10 +195,14 @@ class PipelineStrategy:
                 **fit_params,
             )
         except Exception as e:
-            LOGGER.info(e)
-            LOGGER.info("Pipeline tuning failed. Disconnecting Ray cluster...")
+            LOGGER.error(e)
+            ray.shutdown()
+            raise Exception(
+                "Pipeline tuning failed. Disconnecting Ray cluster. Please check logs."
+            )
         finally:
             ray.shutdown()
+
         LOGGER.info("Pipeline tuning completed. Disconnecting Ray cluster...")
 
         # set best estimator and fit results

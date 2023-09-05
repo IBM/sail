@@ -217,7 +217,7 @@ class SAILTuneGridSearchCV(TuneGridSearchCV):
 
         # Currently, there is a bug where a tqdm logger instance is left unhandled during the Ray Tune. Also, it is an overkill to log Pipeline Training for Distributed Cross Validation. Hence, turning off the verbosity for `SAILPipeline`. This does not affect the Ray Tune logs which can be set via verbose field of tune.run.
         for estimator in estimator_list:
-            estimator.verbosity = 0
+            estimator.verbosity.disabled()
 
         trainable = tune.with_parameters(
             trainable,
@@ -493,7 +493,7 @@ class SAILTuneSearchCV(TuneSearchCV):
 
         # Currently, there is a bug where a tqdm logger instance is left unhandled during the Ray Tune. Also, it is an overkill to log Pipeline Training for Distributed Cross Validation. Hence, turning off the verbosity for `SAILPipeline`. This does not affect the Ray Tune logs which can be set via verbose field of tune.run.
         for estimator in estimator_list:
-            estimator.verbosity = 0
+            estimator.verbosity.disabled()
 
         trainable = tune.with_parameters(
             trainable, X=X, y=y, estimator_list=estimator_list, fit_params=fit_params

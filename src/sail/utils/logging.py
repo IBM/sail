@@ -63,3 +63,50 @@ def configure_root_logger(
     return logzero.setup_logger(
         name=None, level=logging_level, formatter=formatter, json=json
     )
+
+
+class SAILVerbosity:
+    def __init__(self, verbosity=1, log_interval=None) -> None:
+        self.verbosity = verbosity
+        self.log_interval = log_interval
+        self.reset()
+
+    def get(self) -> int:
+        if self.if_logging_allowed():
+            return self._verbosity
+        else:
+            return 0
+
+    def reset(self) -> int:
+        self._verbosity = self.verbosity
+        self._n_epochs = -1
+
+    def enabled(self):
+        self._verbosity = 1
+
+    def disabled(self):
+        self._verbosity = 0
+
+    def resolve(self, override):
+        if self.if_logging_allowed():
+            if override is None:
+                return self.get()
+            elif isinstance(override, int):
+                if override == 0 or override == 1:
+                    return override
+            else:
+                raise Exception(
+                    "Cannot override verbosity value. Override verbosity should only have values from [0, 1]."
+                )
+        else:
+            return 0
+
+    def if_logging_allowed(self):
+        return (
+            True
+            if self.log_interval is None
+            else self._n_epochs % self.log_interval == 0
+        )
+
+    def log_epoch(self):
+        self._n_epochs += 1

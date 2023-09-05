@@ -41,9 +41,7 @@ class SAILAutoPipeline(SAILModel, BaseEstimator):
         self.search_method = self._resolve_search_method(
             search_method, search_method_params
         )
-        self.pipeline_strategy = self._resolve_pipeline_strategy(
-            pipeline_strategy, incremental_training
-        )
+        self.pipeline_strategy = self._resolve_pipeline_strategy(pipeline_strategy)
 
     @property
     def best_pipeline(self) -> SAILPipeline:
@@ -149,7 +147,7 @@ class SAILAutoPipeline(SAILModel, BaseEstimator):
             **search_method_params,
         )
 
-    def _resolve_pipeline_strategy(self, pipeline_strategy, incremental_training):
+    def _resolve_pipeline_strategy(self, pipeline_strategy):
         pipeline_strategy_class = None
         if pipeline_strategy is None:
             pipeline_strategy_class = DetectAndIncrement
@@ -176,10 +174,13 @@ class SAILAutoPipeline(SAILModel, BaseEstimator):
             search_method=self.search_method,
             search_data_size=self.search_data_size,
             drift_detector=self.drift_detector,
-            incremental_training=incremental_training,
+            incremental_training=self.incremental_training,
         )
 
     def train(self, X, y=None, **fit_params):
+        if hasattr(self.pipeline_strategy, "_best_pipeline"):
+            self.pipeline_strategy._best_pipeline.verbosity.log_epoch()
+
         X, y = self._validate_X_y(X, y)
         self.pipeline_strategy.next(X, y, **fit_params)
 
@@ -316,7 +317,7 @@ class SAILAutoPipeline(SAILModel, BaseEstimator):
         sail_auto_pipeline.pipeline_strategy.set_current_action(state["current_action"])
 
         # -------------------------------------------
-        # Load data already collected data for auto ml tuning
+        # Load data already collected for auto ml tuning
         # -------------------------------------------
         if os.path.exists(os.path.join(load_location, "pipeline_strategy", "data.npz")):
             data = np.load(os.path.join(load_location, "pipeline_strategy", "data.npz"))

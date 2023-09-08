@@ -10,9 +10,11 @@ from sklearn.pipeline import Pipeline
 from sklearn.utils import _print_elapsed_time
 from sklearn.utils.metaestimators import available_if
 
-from sail.utils.logging import SAILVerbosity, configure_logger
-from sail.utils.progress_bar import SAILProgressBar
-from sail.utils.scorer import SAILModelScorer
+from sail.common.decorators import log_epoch
+from sail.common.helper import VerboseManager
+from sail.utils.logging import configure_logger
+from sail.common.progress_bar import SAILProgressBar
+from sail.common.scorer import SAILModelScorer
 from sail.utils.serialization import load_obj, save_obj
 
 LOGGER = configure_logger(logger_name="SAILPipeline")
@@ -24,7 +26,8 @@ class SAILPipeline(Pipeline):
         steps: List[Tuple[str, Any]],
         scoring=None,
         cache_memory=None,
-        verbosity: int | None | SAILVerbosity = 1,
+        verbosity: Literal[0, 1] | None = 1,
+        verbosity_interval: int | None = None,
     ):
         """[summary]
 
@@ -36,7 +39,13 @@ class SAILPipeline(Pipeline):
         super(SAILPipeline, self).__init__(steps, memory=cache_memory, verbose=False)
         self.scoring = scoring
         self.cache_memory = cache_memory
-        self.verbosity = self._resolve_verbosity(verbosity)
+        self.verbosity = verbosity
+        self.verbosity_interval = verbosity_interval
+
+        # validate and create verbosity manager
+        self._verbosity = self._resolve_verbosity(verbosity, verbosity_interval)
+
+        # validate and create scorer
         self._scorer = self._validate_and_get_scorer(scoring, steps[-1][1])
 
     def _can_fit_transform(self):
@@ -51,17 +60,18 @@ class SAILPipeline(Pipeline):
             and hasattr(self._final_estimator, "transform")
         )
 
-    def _resolve_verbosity(self, verbosity):
+    def _resolve_verbosity(self, verbosity, verbosity_interval):
         if verbosity is None:
-            return SAILVerbosity(verbosity=0)
+            return VerboseManager(
+                "SAILPipeline",
+                0,
+                verbosity_interval,
+            )
         elif isinstance(verbosity, int):
-            if verbosity == 0 or verbosity == 1:
-                return SAILVerbosity(verbosity=verbosity)
-        elif isinstance(verbosity, SAILVerbosity):
-            return verbosity
-        else:
-            raise Exception(
-                "Invalid Verbosity value. Verbosity can only take values from [0, 1] or be an instance of the type SAILVerbosity"
+            return VerboseManager(
+                "SAILPipeline",
+                verbosity,
+                verbosity_interval,
             )
 
     def _validate_and_get_scorer(self, scoring, estimator):
@@ -92,7 +102,7 @@ class SAILPipeline(Pipeline):
             if isinstance(y, pd.Series):
                 y = y.to_numpy()
             return self._scorer.score(
-                y, y_preds, sample_weight, verbose=self.verbosity.resolve(verbose)
+                y, y_preds, sample_weight, verbose=self._verbosity.get(verbose)
             )
 
     def score_estimator(
@@ -103,7 +113,7 @@ class SAILPipeline(Pipeline):
             if isinstance(y, pd.Series):
                 y = y.to_numpy()
             return self._scorer.score(
-                y, y_preds, sample_weight, verbose=self.verbosity.resolve(verbose)
+                y, y_preds, sample_weight, verbose=self._verbosity.get(verbose)
             )
 
     def _progressive_score(
@@ -119,15 +129,15 @@ class SAILPipeline(Pipeline):
             if isinstance(y, pd.Series):
                 y = y.to_numpy()
             return self._scorer.progressive_score(
-                y, y_pred, sample_weight, detached, self.verbosity.resolve(verbose)
+                y, y_pred, sample_weight, detached, self._verbosity.get(verbose)
             )
 
+    @log_epoch
     def fit(self, X, y=None, **fit_params):
-        self.verbosity.log_epoch()
         self._fit(X, y, warm_start=False, **fit_params)
 
+    @log_epoch
     def partial_fit(self, X, y=None, **fit_params):
-        self.verbosity.log_epoch()
         self._partial_fit(X, y, **fit_params)
 
     def _partial_fit(self, X, y=None, **fit_params):
@@ -161,7 +171,7 @@ class SAILPipeline(Pipeline):
                 "Batch Size": X.shape[0],
             },
             format="pipeline_training",
-            verbose=self.verbosity.get(),
+            verbose=self._verbosity.get(),
         ) as progress:
             for step_idx, name, transformer in self._iter(
                 with_final=False, filter_passthrough=True
@@ -203,7 +213,7 @@ class SAILPipeline(Pipeline):
                 progress.update()
 
             # Update progress bar score after fit().
-            if self.verbosity.get():
+            if self._verbosity.get():
                 if warm_start:
                     progress.update_params("P_Score", self.get_progressive_score)
                 else:
@@ -221,7 +231,7 @@ class SAILPipeline(Pipeline):
         verbose: Literal[0, 1] | None = None,
         **fit_params_steps,
     ):
-        verbose = self.verbosity.resolve(verbose)
+        verbose = self._verbosity.get(verbose)
         with SAILProgressBar(
             steps=1,
             desc=f"SAIL Model Partial fit" if warm_start else f"SAIL Model fit",

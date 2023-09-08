@@ -2,11 +2,11 @@ import importlib
 import os
 import shutil
 from typing import Type, Union
-
+import copy
 import numpy as np
 from sklearn.base import BaseEstimator
 from sklearn.utils import check_array, check_X_y
-
+from sail.common.decorators import validate_X_y
 from sail.drift_detection.drift_detector import SAILDriftDetector
 from sail.models.auto_ml.base_strategy import PipelineActionType, PipelineStrategy
 from sail.models.auto_ml.pipeline_strategy import DetectAndIncrement
@@ -174,14 +174,12 @@ class SAILAutoPipeline(SAILModel, BaseEstimator):
             search_method=self.search_method,
             search_data_size=self.search_data_size,
             drift_detector=self.drift_detector,
+            verbosity=copy.deepcopy(self.pipeline._verbosity),
             incremental_training=self.incremental_training,
         )
 
+    @validate_X_y
     def train(self, X, y=None, **fit_params):
-        if hasattr(self.pipeline_strategy, "_best_pipeline"):
-            self.pipeline_strategy._best_pipeline.verbosity.log_epoch()
-
-        X, y = self._validate_X_y(X, y)
         self.pipeline_strategy.next(X, y, **fit_params)
 
     def predict(self, X, **predict_params):

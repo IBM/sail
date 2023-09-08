@@ -8,7 +8,7 @@ import numpy as np
 import river
 from river import metrics
 
-from sail.utils.progress_bar import SAILProgressBar
+from sail.common.progress_bar import SAILProgressBar
 
 
 class SAILModelScorer:

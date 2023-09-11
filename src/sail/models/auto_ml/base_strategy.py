@@ -1,12 +1,16 @@
 from enum import Enum, auto
 
 import numpy as np
-import ray
-from sail.drift_detection.drift_detector import SAILDriftDetector
-from sail.utils.logging import configure_logger
 import pandas as pd
+import ray
+
+from sail.common.decorators import log_epoch
+from sail.utils.logging import configure_logger
+
+# from sail.visualisation.tensorboard import TensorboardWriter
 
 LOGGER = configure_logger(logger_name="PipelineStrategy")
+# writer = TensorboardWriter("/Logs")
 
 
 class PipelineActionType(Enum):
@@ -87,20 +91,15 @@ class PipelineStrategy:
         self,
         search_method,
         search_data_size,
-        drift_detector=None,
+        drift_detector,
+        verbosity,
         incremental_training=False,
     ) -> None:
         self.search_method = search_method
         self.search_data_size = search_data_size
         self.drift_detector = drift_detector
-        if drift_detector is None:
-            self.drift_detector = SAILDriftDetector()
+        self.verbosity = verbosity
         self.incremental_training = incremental_training
-
-    def action_separator(self):
-        print(
-            ">>>--------------------------------------------------------------------------------------------"
-        )
 
     def set_current_action(self, current_action: PipelineAction):
         self.pipeline_actions.current_action_node = current_action
@@ -108,6 +107,7 @@ class PipelineStrategy:
     def get_current_action(self):
         return self.pipeline_actions.current_action_node
 
+    @log_epoch
     def next(self, X, y=None, tune_params={}, **fit_params):
         if self.pipeline_actions.current_action == PipelineActionType.DATA_COLLECTION:
             self._collect_data_for_parameter_tuning(X, y)
@@ -126,28 +126,31 @@ class PipelineStrategy:
             self.pipeline_actions.current_action
             == PipelineActionType.SCORE_AND_DETECT_DRIFT
         ):
-            self.action_separator()
             if self.incremental_training:
                 score = self._best_pipeline._progressive_score(X, y, detached=True)
             else:
                 score = self._best_pipeline.score(X, y)
 
             y_pred = self._best_pipeline.predict(X)
-            if not self._detect_drift(score, y_pred, y) and self.incremental_training:
+
+            # write progress to tensorboard
+            # writer.write_predictions(y_pred, y)
+            # writer.write_score(score, self.verbosity.current_epoch_n)
+
+            if (
+                not self._detect_drift(score=score, y_pred=y_pred, y_true=y)
+            ) and self.incremental_training:
                 self._partial_fit_pipeline(X, y, **fit_params)
         elif (
             self.pipeline_actions.current_action
             == PipelineActionType.PARTIAL_FIT_PIPELINE
         ):
-            self.action_separator()
             self._partial_fit_pipeline(X, y, **fit_params)
         elif (
             self.pipeline_actions.current_action == PipelineActionType.PARTIAL_FIT_MODEL
         ):
-            self.action_separator()
             self._partial_fit_model(X, y, **fit_params)
         elif self.pipeline_actions.current_action == PipelineActionType.FIT_MODEL:
-            self.action_separator()
             self._fit_model(X, y, **fit_params)
 
     def _collect_data_for_parameter_tuning(self, X, y):
@@ -206,9 +209,12 @@ class PipelineStrategy:
         LOGGER.info("Pipeline tuning completed. Disconnecting Ray cluster...")
 
         # set best estimator and fit results
+        # self._fit_result = fit_result
         self._best_pipeline = fit_result.best_estimator_
-        self._best_pipeline.verbosity = 1
-        self._fit_result = fit_result
+
+        # replace verbosity instance of the best pipeline from the parent.
+        self._best_pipeline.verbosity = self.verbosity
+
         LOGGER.info(f"Found best params: {fit_result.best_params}")
 
         # housekeeping
@@ -218,21 +224,16 @@ class PipelineStrategy:
         self.pipeline_actions.next()
 
     def _partial_fit_pipeline(self, X, y, **fit_params):
-        self._best_pipeline.partial_fit(X, y, **fit_params)
+        self._best_pipeline._partial_fit(X, y, **fit_params)
 
     def _partial_fit_model(self, X, y, **fit_params):
-        self._best_pipeline.fit_final_estimator(
-            X, y, warm_start=True, verbose=1, **fit_params
-        )
+        self._best_pipeline.fit_final_estimator(X, y, warm_start=True, **fit_params)
         self.pipeline_actions.next()
 
     def _fit_model(self, X, y, **fit_params):
-        self._best_pipeline.fit_final_estimator(
-            X, y, warm_start=False, verbose=1, **fit_params
-        )
+        self._best_pipeline.fit_final_estimator(X, y, warm_start=False, **fit_params)
         self.pipeline_actions.next()
 
-    def _detect_drift(self, *args):
-        if self.drift_detector.detect_drift(*args):
-            LOGGER.info("Drift Detected in the data.")
-            self.pipeline_actions.next()
+    def _detect_drift(self, **kwargs):
+        self.drift_detector.set_verbose(self.verbosity.get())
+        return self.detect_drift(**kwargs)

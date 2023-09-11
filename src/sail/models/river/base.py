@@ -2,7 +2,7 @@ from river.compat import River2SKLClassifier, River2SKLRegressor
 
 from sail.models.base import SAILModel
 from sail.utils.logging import configure_logger
-from sail.utils.mixin import RiverAttributeMixin
+from sail.common.mixin import RiverAttributeMixin
 
 LOGGER = configure_logger(logger_name="River")
 

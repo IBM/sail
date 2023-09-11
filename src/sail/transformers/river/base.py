@@ -4,8 +4,7 @@ import numpy as np
 from river import base
 from river.compat import River2SKLTransformer, river_to_sklearn
 from sklearn import utils
-from sail.utils.mixin import RiverAttributeMixin
-from sail.transformers.base import BaseTransformer
+from sail.common.mixin import RiverAttributeMixin
 
 
 class BaseRiverTransformer(RiverAttributeMixin, River2SKLTransformer):

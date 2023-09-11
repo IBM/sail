@@ -5,7 +5,7 @@ from river.base import DriftDetector, BinaryDriftDetector
 from river.drift.binary import EDDM
 from river.drift.page_hinkley import PageHinkley
 from sail.utils.logging import configure_logger
-from sail.utils.progress_bar import SAILProgressBar
+from sail.common.progress_bar import SAILProgressBar
 
 LOGGER = configure_logger(logger_name="DriftDetector")
 
@@ -15,9 +15,14 @@ class SAILDriftDetector:
         self,
         model: Union[str, DriftDetector] = EDDM(),
         drift_param: Literal["score", "difference"] = "score",
+        verbose=1,
     ) -> None:
         self._drift_detector = self._resolve_drift_detector(model)
         self.drift_param = drift_param
+        self.verbose = verbose
+
+    def set_verbose(self, verbose):
+        self.verbose = verbose
 
     def _resolve_drift_detector(self, drift_detector) -> DriftDetector:
         if isinstance(drift_detector, DriftDetector) or isinstance(
@@ -42,13 +47,13 @@ class SAILDriftDetector:
             )
         return _drift_detector_class()
 
-    def detect_drift(self, *args):
+    def detect_drift(self, score=None, y_pred=None, y_true=None):
         if self.drift_param == "difference":
-            return self._detect_drift_with_difference(args[1], args[2])
+            return self.detect_drift_with_difference(y_pred, y_true)
         elif self.drift_param == "score":
-            return self._detect_drift_with_score(args[0])
+            return self.detect_drift_with_score(score)
 
-    def _detect_drift_with_difference(self, y_preds, y_true):
+    def detect_drift_with_difference(self, y_preds, y_true):
         with SAILProgressBar(
             steps=len(y_preds),
             desc=f"SAIL Drift detection",
@@ -59,7 +64,7 @@ class SAILDriftDetector:
                 "Drift": "No",
             },
             format="scoring",
-            verbose=1,
+            verbose=self.verbose,
         ) as progress:
             for yt, yh in zip(y_true, y_preds):
                 self._drift_detector.update(yt - yh)
@@ -71,7 +76,7 @@ class SAILDriftDetector:
 
         return False
 
-    def _detect_drift_with_score(self, score):
+    def detect_drift_with_score(self, score):
         with SAILProgressBar(
             steps=1,
             desc=f"SAIL Drift detection",
@@ -81,7 +86,7 @@ class SAILDriftDetector:
                 "Drift": "No",
             },
             format="scoring",
-            verbose=1,
+            verbose=self.verbose,
         ) as progress:
             self._drift_detector.update(score)
             progress.update()

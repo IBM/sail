@@ -35,6 +35,7 @@ class SAILAutoPipeline(SAILModel, BaseEstimator):
         pipeline_strategy: Union[None, str] = None,
         verbosity_level: Literal[0, 1] | None = 1,
         verbosity_interval: int | None = None,
+        tensorboard_log_dir: str = None,
     ) -> None:
         self.pipeline = pipeline
         self.pipeline_params_grid = pipeline_params_grid
@@ -46,6 +47,7 @@ class SAILAutoPipeline(SAILModel, BaseEstimator):
             self.drift_detector = SAILDriftDetector()
         self.verbosity_level = verbosity_level
         self.verbosity_interval = verbosity_interval
+        self.tensorboard_log_dir = tensorboard_log_dir
 
         self.search_method = self._resolve_search_method(
             search_method, search_method_params
@@ -201,6 +203,7 @@ class SAILAutoPipeline(SAILModel, BaseEstimator):
             drift_detector=self.drift_detector,
             verbosity=self.verbosity,
             incremental_training=self.incremental_training,
+            tensorboard_log_dir=self.tensorboard_log_dir,
         )
 
     @validate_X_y
@@ -283,6 +286,17 @@ class SAILAutoPipeline(SAILModel, BaseEstimator):
         )
 
         # -------------------------------------------
+        # save tensorboard writer state if enabled
+        # -------------------------------------------
+        if self.tensorboard_log_dir:
+            save_obj(
+                obj=self.pipeline_strategy.writer.get_state(),
+                location=os.path.join(save_location, "pipeline_strategy"),
+                file_name="tensorboard_dir",
+                serialize_type="json",
+            )
+
+        # -------------------------------------------
         # save data already collected for auto ml tuning
         # -------------------------------------------
         if hasattr(pipeline_strategy, "_input_X"):
@@ -358,6 +372,17 @@ class SAILAutoPipeline(SAILModel, BaseEstimator):
             serialize_type="json",
         )
         sail_auto_pipeline.verbosity.set_state(state)
+
+        # -------------------------------------------
+        # load tensorboard writer state if enabled
+        # -------------------------------------------
+        if sail_auto_pipeline.tensorboard_log_dir:
+            state = load_obj(
+                location=os.path.join(load_location, "pipeline_strategy"),
+                file_name="tensorboard_dir",
+                serialize_type="json",
+            )
+            sail_auto_pipeline.pipeline_strategy.writer.set_state(state)
 
         # -------------------------------------------
         # Load data already collected for auto ml tuning

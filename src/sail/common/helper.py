@@ -37,6 +37,10 @@ class VerboseManager:
     def current_epoch_n(self):
         return self._current_epoch_n
 
+    @property
+    def samples_seen_n(self):
+        return self._samples_seen_n
+
     def get(self, override=None) -> int:
         if self.if_logging_allowed():
             if override is not None:

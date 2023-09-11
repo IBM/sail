@@ -7,10 +7,9 @@ import ray
 from sail.common.decorators import log_epoch
 from sail.utils.logging import configure_logger
 
-# from sail.visualisation.tensorboard import TensorboardWriter
+from sail.visualisation.tensorboard import TensorboardWriter
 
 LOGGER = configure_logger(logger_name="PipelineStrategy")
-# writer = TensorboardWriter("/Logs")
 
 
 class PipelineActionType(Enum):
@@ -94,12 +93,20 @@ class PipelineStrategy:
         drift_detector,
         verbosity,
         incremental_training=False,
+        tensorboard_log_dir=None,
     ) -> None:
         self.search_method = search_method
         self.search_data_size = search_data_size
         self.drift_detector = drift_detector
         self.verbosity = verbosity
         self.incremental_training = incremental_training
+        self.tensorboard_log_dir = tensorboard_log_dir
+
+        if tensorboard_log_dir:
+            self.writer = TensorboardWriter(tensorboard_log_dir)
+            LOGGER.info(
+                f"Sending training output to Tensorboard logs. Please run `tensorboard --logdir {tensorboard_log_dir}` in terminal to check training progress."
+            )
 
     def set_current_action(self, current_action: PipelineAction):
         self.pipeline_actions.current_action_node = current_action
@@ -117,11 +124,13 @@ class PipelineStrategy:
             == PipelineActionType.FIND_BEST_PIPELINE
         ):
             self._find_best_pipeline(**fit_params)
+
         elif (
             self.pipeline_actions.current_action
             == PipelineActionType.WARM_START_FIND_BEST_PIPELINE
         ):
             self._find_best_pipeline(warm_start=True, **fit_params)
+
         elif (
             self.pipeline_actions.current_action
             == PipelineActionType.SCORE_AND_DETECT_DRIFT
@@ -132,24 +141,30 @@ class PipelineStrategy:
                 score = self._best_pipeline.score(X, y)
 
             y_pred = self._best_pipeline.predict(X)
+            is_drift_detected = self._detect_drift(score=score, y_pred=y_pred, y_true=y)
 
             # write progress to tensorboard
-            # writer.write_predictions(y_pred, y)
-            # writer.write_score(score, self.verbosity.current_epoch_n)
+            if self.tensorboard_log_dir:
+                start_index = self.verbosity.samples_seen_n - len(y_pred)
+                self.writer.write_predictions(y_pred, y, start_index=start_index)
+                self.writer.write_score(
+                    score, self.verbosity.current_epoch_n, drift_point=is_drift_detected
+                )
 
-            if (
-                not self._detect_drift(score=score, y_pred=y_pred, y_true=y)
-            ) and self.incremental_training:
+            if (not is_drift_detected) and self.incremental_training:
                 self._partial_fit_pipeline(X, y, **fit_params)
+
         elif (
             self.pipeline_actions.current_action
             == PipelineActionType.PARTIAL_FIT_PIPELINE
         ):
             self._partial_fit_pipeline(X, y, **fit_params)
+
         elif (
             self.pipeline_actions.current_action == PipelineActionType.PARTIAL_FIT_MODEL
         ):
             self._partial_fit_model(X, y, **fit_params)
+
         elif self.pipeline_actions.current_action == PipelineActionType.FIT_MODEL:
             self._fit_model(X, y, **fit_params)
 

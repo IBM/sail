@@ -5,8 +5,6 @@ import pandas as pd
 import ray
 
 from sail.common.decorators import log_epoch
-from sail.common.helper import VerboseManager
-from sail.drift_detection.drift_detector import SAILDriftDetector
 from sail.utils.logging import configure_logger
 
 # from sail.visualisation.tensorboard import TensorboardWriter
@@ -93,15 +91,13 @@ class PipelineStrategy:
         self,
         search_method,
         search_data_size,
-        drift_detector=None,
-        verbosity=VerboseManager(),
+        drift_detector,
+        verbosity,
         incremental_training=False,
     ) -> None:
         self.search_method = search_method
         self.search_data_size = search_data_size
         self.drift_detector = drift_detector
-        if drift_detector is None:
-            self.drift_detector = SAILDriftDetector()
         self.verbosity = verbosity
         self.incremental_training = incremental_training
 
@@ -213,9 +209,12 @@ class PipelineStrategy:
         LOGGER.info("Pipeline tuning completed. Disconnecting Ray cluster...")
 
         # set best estimator and fit results
+        # self._fit_result = fit_result
         self._best_pipeline = fit_result.best_estimator_
-        self._best_pipeline._verbosity = self.verbosity
-        self._fit_result = fit_result
+
+        # replace verbosity instance of the best pipeline from the parent.
+        self._best_pipeline.verbosity = self.verbosity
+
         LOGGER.info(f"Found best params: {fit_result.best_params}")
 
         # housekeeping

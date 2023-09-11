@@ -23,6 +23,16 @@ class VerboseManager:
         self._current_epoch_n = 0
         self._samples_seen_n = 0
 
+    def get_state(self):
+        return {
+            "current_epoch_n": self._current_epoch_n,
+            "samples_seen_n": self._samples_seen_n,
+        }
+
+    def set_state(self, state: dict):
+        self._current_epoch_n = state["current_epoch_n"]
+        self._samples_seen_n = state["samples_seen_n"]
+
     @property
     def current_epoch_n(self):
         return self._current_epoch_n

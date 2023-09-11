@@ -4,12 +4,7 @@ from sklearn.utils import check_array, check_X_y
 def log_epoch(func):
     def wrapper(*args, **kwargs):
         estimator = args[0]
-
-        if hasattr(estimator, "_verbosity"):
-            estimator._verbosity.log_epoch(args[1])
-        elif hasattr(estimator, "verbosity"):
-            estimator.verbosity.log_epoch(args[1])
-
+        estimator.verbosity.log_epoch(args[1])
         func(*args, **kwargs)
 
     return wrapper

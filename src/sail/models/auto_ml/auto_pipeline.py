@@ -1,12 +1,15 @@
+import copy
 import importlib
 import os
 import shutil
-from typing import Type, Union
-import copy
+from typing import Type, Union, Literal
+
 import numpy as np
 from sklearn.base import BaseEstimator
 from sklearn.utils import check_array, check_X_y
+
 from sail.common.decorators import validate_X_y
+from sail.common.helper import VerboseManager
 from sail.drift_detection.drift_detector import SAILDriftDetector
 from sail.models.auto_ml.base_strategy import PipelineActionType, PipelineStrategy
 from sail.models.auto_ml.pipeline_strategy import DetectAndIncrement
@@ -30,6 +33,8 @@ class SAILAutoPipeline(SAILModel, BaseEstimator):
         incremental_training: bool = False,
         drift_detector: Union[None, SAILDriftDetector] = None,
         pipeline_strategy: Union[None, str] = None,
+        verbosity_level: Literal[0, 1] | None = 1,
+        verbosity_interval: int | None = None,
     ) -> None:
         self.pipeline = pipeline
         self.pipeline_params_grid = pipeline_params_grid
@@ -37,10 +42,16 @@ class SAILAutoPipeline(SAILModel, BaseEstimator):
         self.search_data_size = search_data_size
         self.incremental_training = incremental_training
         self.drift_detector = drift_detector
+        if drift_detector is None:
+            self.drift_detector = SAILDriftDetector()
+        self.verbosity_level = verbosity_level
+        self.verbosity_interval = verbosity_interval
 
         self.search_method = self._resolve_search_method(
             search_method, search_method_params
         )
+        # validate and create verbosity manager
+        self.verbosity = self._resolve_verbosity(verbosity_level, verbosity_interval)
         self.pipeline_strategy = self._resolve_pipeline_strategy(pipeline_strategy)
 
     @property
@@ -110,6 +121,20 @@ class SAILAutoPipeline(SAILModel, BaseEstimator):
             _, y = check_X_y(X_new, y, dtype=None)
             return X, y
 
+    def _resolve_verbosity(self, verbosity, verbosity_interval):
+        if verbosity is None:
+            return VerboseManager(
+                "SAILPipeline",
+                0,
+                verbosity_interval,
+            )
+        elif isinstance(verbosity, int):
+            return VerboseManager(
+                "SAILPipeline",
+                verbosity,
+                verbosity_interval,
+            )
+
     def _resolve_search_method(self, search_method, search_method_params):
         if search_method is None:
             _search_class = SAILTuneGridSearchCV
@@ -174,7 +199,7 @@ class SAILAutoPipeline(SAILModel, BaseEstimator):
             search_method=self.search_method,
             search_data_size=self.search_data_size,
             drift_detector=self.drift_detector,
-            verbosity=copy.deepcopy(self.pipeline._verbosity),
+            verbosity=self.verbosity,
             incremental_training=self.incremental_training,
         )
 
@@ -248,6 +273,16 @@ class SAILAutoPipeline(SAILModel, BaseEstimator):
         )
 
         # -------------------------------------------
+        # save pipeline_strategy verbosity state
+        # -------------------------------------------
+        save_obj(
+            obj=self.verbosity.get_state(),
+            location=os.path.join(save_location, "pipeline_strategy"),
+            file_name="verbosity_state",
+            serialize_type="json",
+        )
+
+        # -------------------------------------------
         # save data already collected for auto ml tuning
         # -------------------------------------------
         if hasattr(pipeline_strategy, "_input_X"):
@@ -260,12 +295,12 @@ class SAILAutoPipeline(SAILModel, BaseEstimator):
         # -------------------------------------------
         # save fit results and best pipeline
         # -------------------------------------------
-        if hasattr(pipeline_strategy, "_fit_result"):
-            save_obj(
-                pipeline_strategy._fit_result,
-                location=os.path.join(save_location, "pipeline_strategy"),
-                file_name="fit_result",
-            )
+        if hasattr(pipeline_strategy, "_best_pipeline"):
+            # save_obj(
+            #     pipeline_strategy._fit_result,
+            #     location=os.path.join(save_location, "pipeline_strategy"),
+            #     file_name="fit_result",
+            # )
             pipeline_strategy._best_pipeline.save(
                 os.path.join(save_location, "pipeline_strategy"), name="best_pipeline"
             )
@@ -315,6 +350,16 @@ class SAILAutoPipeline(SAILModel, BaseEstimator):
         sail_auto_pipeline.pipeline_strategy.set_current_action(state["current_action"])
 
         # -------------------------------------------
+        # load verbosity state
+        # -------------------------------------------
+        state = load_obj(
+            location=os.path.join(load_location, "pipeline_strategy"),
+            file_name="verbosity_state",
+            serialize_type="json",
+        )
+        sail_auto_pipeline.verbosity.set_state(state)
+
+        # -------------------------------------------
         # Load data already collected for auto ml tuning
         # -------------------------------------------
         if os.path.exists(os.path.join(load_location, "pipeline_strategy", "data.npz")):
@@ -327,15 +372,21 @@ class SAILAutoPipeline(SAILModel, BaseEstimator):
         # Load fit results and best pipeline
         # -------------------------------------------
         try:
-            fit_result = load_obj(
-                location=os.path.join(load_location, "pipeline_strategy"),
-                file_name="fit_result",
-            )
-            sail_auto_pipeline.pipeline_strategy._fit_result = fit_result
+            # fit_result = load_obj(
+            #     location=os.path.join(load_location, "pipeline_strategy"),
+            #     file_name="fit_result",
+            # )
+            # sail_auto_pipeline.pipeline_strategy._fit_result = fit_result
             best_pipeline = SAILPipeline.load(
                 os.path.join(load_location, "pipeline_strategy"), name="best_pipeline"
             )
             sail_auto_pipeline.pipeline_strategy._best_pipeline = best_pipeline
+
+            # replace verbosity instance of the best pipeline from the parent.
+            sail_auto_pipeline.pipeline_strategy._best_pipeline.verbosity = (
+                sail_auto_pipeline.verbosity
+            )
+
         except Exception as e:
             print(e)
 

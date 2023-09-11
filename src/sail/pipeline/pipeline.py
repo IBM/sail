@@ -26,7 +26,7 @@ class SAILPipeline(Pipeline):
         steps: List[Tuple[str, Any]],
         scoring=None,
         cache_memory=None,
-        verbosity: Literal[0, 1] | None = 1,
+        verbosity_level: Literal[0, 1] | None = 1,
         verbosity_interval: int | None = None,
     ):
         """[summary]
@@ -39,11 +39,11 @@ class SAILPipeline(Pipeline):
         super(SAILPipeline, self).__init__(steps, memory=cache_memory, verbose=False)
         self.scoring = scoring
         self.cache_memory = cache_memory
-        self.verbosity = verbosity
+        self.verbosity_level = verbosity_level
         self.verbosity_interval = verbosity_interval
 
         # validate and create verbosity manager
-        self._verbosity = self._resolve_verbosity(verbosity, verbosity_interval)
+        self.verbosity = self._resolve_verbosity(verbosity_level, verbosity_interval)
 
         # validate and create scorer
         self._scorer = self._validate_and_get_scorer(scoring, steps[-1][1])
@@ -102,7 +102,7 @@ class SAILPipeline(Pipeline):
             if isinstance(y, pd.Series):
                 y = y.to_numpy()
             return self._scorer.score(
-                y, y_preds, sample_weight, verbose=self._verbosity.get(verbose)
+                y, y_preds, sample_weight, verbose=self.verbosity.get(verbose)
             )
 
     def score_estimator(
@@ -113,7 +113,7 @@ class SAILPipeline(Pipeline):
             if isinstance(y, pd.Series):
                 y = y.to_numpy()
             return self._scorer.score(
-                y, y_preds, sample_weight, verbose=self._verbosity.get(verbose)
+                y, y_preds, sample_weight, verbose=self.verbosity.get(verbose)
             )
 
     def _progressive_score(
@@ -129,7 +129,7 @@ class SAILPipeline(Pipeline):
             if isinstance(y, pd.Series):
                 y = y.to_numpy()
             return self._scorer.progressive_score(
-                y, y_pred, sample_weight, detached, self._verbosity.get(verbose)
+                y, y_pred, sample_weight, detached, self.verbosity.get(verbose)
             )
 
     @log_epoch
@@ -171,7 +171,7 @@ class SAILPipeline(Pipeline):
                 "Batch Size": X.shape[0],
             },
             format="pipeline_training",
-            verbose=self._verbosity.get(),
+            verbose=self.verbosity.get(),
         ) as progress:
             for step_idx, name, transformer in self._iter(
                 with_final=False, filter_passthrough=True
@@ -213,7 +213,7 @@ class SAILPipeline(Pipeline):
                 progress.update()
 
             # Update progress bar score after fit().
-            if self._verbosity.get():
+            if self.verbosity.get():
                 if warm_start:
                     progress.update_params("P_Score", self.get_progressive_score)
                 else:
@@ -231,7 +231,7 @@ class SAILPipeline(Pipeline):
         verbose: Literal[0, 1] | None = None,
         **fit_params_steps,
     ):
-        verbose = self._verbosity.get(verbose)
+        verbose = self.verbosity.get(verbose)
         with SAILProgressBar(
             steps=1,
             desc=f"SAIL Model Partial fit" if warm_start else f"SAIL Model fit",
@@ -355,9 +355,9 @@ class SAILPipeline(Pipeline):
             if not os.path.exists(save_location):
                 raise Exception(f"target directory {save_location} can not be created!")
 
-        # -------------------------------------------
+        # --------------------------------------------
         # explicity save all the steps and steps names
-        # -------------------------------------------
+        # --------------------------------------------
         for i, (step_name, step) in enumerate(self.steps):
             save_obj(
                 obj=step,
@@ -371,15 +371,26 @@ class SAILPipeline(Pipeline):
             serialize_type="json",
         )
 
-        # -------------------------------------------
-        # save scorer progressive state if present
-        # -------------------------------------------
-        if hasattr(self._scorer, "_y_true"):
+        # -----------------------------
+        # save scorer progressive state
+        # -----------------------------
+        state = self._scorer.get_state()
+        if state:
             np.savez(
                 os.path.join(save_location, "scorer_state"),
-                y_true=self._scorer._y_true,
-                y_pred=self._scorer._y_pred,
+                y_true=state["y_true"],
+                y_pred=state["y_pred"],
             )
+
+        # -------------------------------------------
+        # save verbosity state
+        # -------------------------------------------
+        save_obj(
+            obj=self.verbosity.get_state(),
+            location=os.path.join(save_location),
+            file_name="verbosity_state",
+            serialize_type="json",
+        )
 
         # -------------------------------------------
         # save rest of the params
@@ -423,13 +434,24 @@ class SAILPipeline(Pipeline):
         sail_pipeline = SAILPipeline(steps=steps, **params)
 
         # -------------------------------------------
-        # Pre-load progressive scorer state from initial_points if present.
+        # Pre-load progressive scorer state from initial_points if exist.
         # -------------------------------------------
         if os.path.exists(os.path.join(load_location, "scorer_state.npz")):
             initial_points = np.load(os.path.join(load_location, "scorer_state.npz"))
-            sail_pipeline._scorer.progressive_score(
-                initial_points["y_true"], initial_points["y_pred"], verbose=1
-            )
+            sail_pipeline._scorer.set_state(initial_points)
+            # sail_pipeline._scorer.progressive_score(
+            #     initial_points["y_true"], initial_points["y_pred"], verbose=1
+            # )
             initial_points.close()
+
+        # -------------------------------------------
+        # load verbosity state
+        # -------------------------------------------
+        state = load_obj(
+            location=load_location,
+            file_name="verbosity_state",
+            serialize_type="json",
+        )
+        sail_pipeline.verbosity.set_state(state)
 
         return sail_pipeline

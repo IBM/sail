@@ -30,6 +30,15 @@ class SAILModelScorer:
     def get_progressive_score(self):
         return self._metric.get()
 
+    def get_state(self):
+        if hasattr(self, "_y_true"):
+            return {"y_true": self._y_true, "y_pred": self._y_pred}
+        else:
+            return None
+
+    def set_state(self, state):
+        self.progressive_score(state["y_true"], state["y_pred"], verbose=1)
+
     def get_default_scorer(self, estimator_type):
         if estimator_type == "classifier":
             return metrics.Accuracy()

@@ -104,9 +104,6 @@ class PipelineStrategy:
 
         if tensorboard_log_dir:
             self.writer = TensorboardWriter(tensorboard_log_dir)
-            LOGGER.info(
-                f"Sending training output to Tensorboard logs. Please run `tensorboard --logdir {tensorboard_log_dir}` in terminal to check training progress."
-            )
 
     def set_current_action(self, current_action: PipelineAction):
         self.pipeline_actions.current_action_node = current_action

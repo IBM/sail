@@ -1,10 +1,15 @@
-import torch
-from torch.utils.tensorboard import SummaryWriter, FileWriter
-import time
-from torch.utils.tensorboard.summary import scalar
-import numpy as np
 import glob
 import os
+import time
+
+import numpy as np
+import torch
+from torch.utils.tensorboard import FileWriter, SummaryWriter
+from torch.utils.tensorboard.summary import scalar
+
+from sail.utils.logging import configure_logger
+
+LOGGER = configure_logger(logger_name="TensorboardWriter")
 
 
 class TensorboardWriter(SummaryWriter):
@@ -15,15 +20,20 @@ class TensorboardWriter(SummaryWriter):
             exp_dir = log_dir + "/" + use_dir
         else:
             dirs = sorted(
-                glob.glob(os.path.join(log_dir, exp_name + "*")), reverse=True
+                glob.glob(os.path.join(log_dir, exp_name, "v*")), reverse=True
             )
             new_dir_no = 1
             if len(dirs) > 0:
-                new_dir_no = int(dirs[0].split("_")[-1][1]) + 1
-            exp_dir = log_dir + "/" + exp_name + "_v" + str(new_dir_no)
+                new_dir_no = int(dirs[0].split("/")[-1][1]) + 1
+            exp_dir = os.path.join(log_dir, exp_name, "v" + str(new_dir_no))
+            # log_dir + "/" + exp_name + "/_v" + str(new_dir_no)
 
         super().__init__(exp_dir, *args, **kwrags)
         self.all_writers = {}
+
+        LOGGER.info(
+            f"Sending training output to Tensorboard logs. Please run `tensorboard --logdir {os.path.join(log_dir, exp_name)}` in terminal to start tensorboard server and track training progress."
+        )
 
     def get_state(self):
         return {"log_dir": self.log_dir}

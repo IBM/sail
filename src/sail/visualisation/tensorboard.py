@@ -9,18 +9,19 @@ import os
 
 class TensorboardWriter(SummaryWriter):
     def __init__(
-        self, log_dir=None, exp_name="SAIL_Training", use_dir=None, *args, **kwrags
+        self, log_dir=None, exp_name="Training_Logs", use_dir=None, *args, **kwrags
     ):
         if use_dir:
             exp_dir = log_dir + "/" + use_dir
         else:
             dirs = sorted(
-                glob.glob(os.path.join(log_dir, exp_name + "_*")), reverse=True
+                glob.glob(os.path.join(log_dir, exp_name + "*")), reverse=True
             )
             new_dir_no = 1
             if len(dirs) > 0:
-                new_dir_no = int(dirs[0].split("_")[-1]) + 1
-            exp_dir = log_dir + "/" + exp_name + "_" + str(new_dir_no)
+                new_dir_no = int(dirs[0].split("_")[-1][1]) + 1
+            exp_dir = log_dir + "/" + exp_name + "_v" + str(new_dir_no)
+
         super().__init__(exp_dir, *args, **kwrags)
         self.all_writers = {}
 
@@ -45,31 +46,90 @@ class TensorboardWriter(SummaryWriter):
             )
 
     def write_score(self, score, epoch_n, drift_point=False):
-        self.add_scalars_custom(
+        self.add_scalar(
             "Score_and_Detect",
-            {"Score": score, "Drift": score},
+            score,
             epoch_n,
-            include_main_tag=False,
         )
 
         if drift_point:
-            self.add_scalars_custom(
+            self.add_scalar(
                 "Score_and_Detect",
-                {
-                    "Drift": np.nan,
-                },
+                np.nan,
                 epoch_n,
-                include_main_tag=False,
             )
-            self.add_scalars_custom(
+            self.add_scalar(
                 "Score_and_Detect",
-                {
-                    "Drift": score,
-                },
+                score,
                 epoch_n,
-                include_main_tag=False,
             )
+
+        #     self.add_scalars_custom(
+        #         "Score_and_Detect",
+        #         {
+        #             "Drift": np.nan,
+        #         },
+        #         epoch_n,
+        #         include_main_tag=False,
+        #     )
+        #     self.add_scalars_custom(
+        #         "Score_and_Detect",
+        #         {
+        #             "Drift": score,
+        #         },
+        #         epoch_n,
+        #         include_main_tag=False,
+        #     )
         self.flush()
+
+    def add_scalar(
+        self,
+        tag,
+        scalar_value,
+        global_step=None,
+        walltime=None,
+        new_style=False,
+        double_precision=False,
+    ):
+        """Add scalar data to summary.
+
+        Args:
+            tag (str): Data identifier
+            scalar_value (float or string/blobname): Value to save
+            global_step (int): Global step value to record
+            walltime (float): Optional override default walltime (time.time())
+            with seconds after epoch of event
+            new_style (boolean): Whether to use new style (tensor field) or old
+            style (simple_value field). New style could lead to faster data loading.
+        Examples::
+
+            from torch.utils.tensorboard import SummaryWriter
+            writer = SummaryWriter()
+            x = range(100)
+            for i in x:
+                writer.add_scalar('y=2x', i * 2, i)
+            writer.close()
+
+        Expected result:
+
+        .. image:: _static/img/tensorboard/add_scalar.png
+        :scale: 50 %
+
+        """
+        torch._C._log_api_usage_once("tensorboard.logging.add_scalar")
+        summary = scalar(
+            tag, scalar_value, new_style=new_style, double_precision=double_precision
+        )
+        fw_tag = self.log_dir + "/" + tag
+        if self.all_writers and fw_tag in self.all_writers.keys():
+            fw = self.all_writers[fw_tag]
+        else:
+            fw = FileWriter(
+                fw_tag, self.max_queue, self.flush_secs, self.filename_suffix
+            )
+            self.all_writers[fw_tag] = fw
+
+        fw.add_summary(summary, global_step, walltime)
 
     def add_scalars_custom(
         self,

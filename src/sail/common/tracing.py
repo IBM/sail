@@ -2,7 +2,7 @@ import os
 
 
 class TracingClient:
-    def __init__(self, host, port) -> None:
+    def __init__(self, host=None, port=None) -> None:
         self.host = host
         self.port = port
 

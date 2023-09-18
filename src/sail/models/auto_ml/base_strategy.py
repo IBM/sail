@@ -94,6 +94,7 @@ class PipelineStrategy:
         verbosity,
         incremental_training=False,
         tensorboard_log_dir=None,
+        tracer=None,
     ) -> None:
         self.search_method = search_method
         self.search_data_size = search_data_size
@@ -101,6 +102,7 @@ class PipelineStrategy:
         self.verbosity = verbosity
         self.incremental_training = incremental_training
         self.tensorboard_log_dir = tensorboard_log_dir
+        self.tracer = tracer
 
         if tensorboard_log_dir:
             self.writer = TensorboardWriter(tensorboard_log_dir)
@@ -203,13 +205,23 @@ class PipelineStrategy:
             f"Cluster resources: Nodes: {len(ray.nodes())}, Cluster CPU: {ray.cluster_resources()['CPU']}, Cluster Memory: {str(format(ray.cluster_resources()['memory'] / (1024 * 1024 * 1024), '.2f')) + ' GB'}"
         )
         try:
-            fit_result = self.search_method.fit(
-                X=self._input_X,
-                y=self._input_y,
-                warm_start=warm_start,
-                tune_params=tune_params,
-                **fit_params,
-            )
+            if self.tracer:
+                with self.tracer.start_as_current_span("Pipeline-tuning"):
+                    fit_result = self.search_method.fit(
+                        X=self._input_X,
+                        y=self._input_y,
+                        warm_start=warm_start,
+                        tune_params=tune_params,
+                        **fit_params,
+                    )
+            else:
+                fit_result = self.search_method.fit(
+                    X=self._input_X,
+                    y=self._input_y,
+                    warm_start=warm_start,
+                    tune_params=tune_params,
+                    **fit_params,
+                )
         except Exception as e:
             LOGGER.error(e)
             ray.shutdown()

@@ -36,6 +36,7 @@ class SAILAutoPipeline(SAILModel, BaseEstimator):
         verbosity_level: Literal[0, 1] | None = 1,
         verbosity_interval: int | None = None,
         tensorboard_log_dir: str = None,
+        tracer=None,
     ) -> None:
         self.pipeline = pipeline
         self.pipeline_params_grid = pipeline_params_grid
@@ -48,6 +49,7 @@ class SAILAutoPipeline(SAILModel, BaseEstimator):
         self.verbosity_level = verbosity_level
         self.verbosity_interval = verbosity_interval
         self.tensorboard_log_dir = tensorboard_log_dir
+        self.tracer = tracer
 
         self.search_method = self._resolve_search_method(
             search_method, search_method_params
@@ -204,6 +206,7 @@ class SAILAutoPipeline(SAILModel, BaseEstimator):
             verbosity=self.verbosity,
             incremental_training=self.incremental_training,
             tensorboard_log_dir=self.tensorboard_log_dir,
+            tracer=self.tracer,
         )
 
     @validate_X_y

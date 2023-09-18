@@ -206,7 +206,7 @@ class PipelineStrategy:
         )
         try:
             if self.tracer:
-                with self.tracer.start_as_current_span("Pipeline-tuning"):
+                with self.tracer.trace("Pipeline-tuning"):
                     fit_result = self.search_method.fit(
                         X=self._input_X,
                         y=self._input_y,

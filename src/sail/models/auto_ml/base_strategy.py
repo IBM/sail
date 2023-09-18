@@ -116,6 +116,9 @@ class PipelineStrategy:
     @log_epoch
     def next(self, X, y=None, tune_params={}, **fit_params):
         if self.pipeline_actions.current_action == PipelineActionType.DATA_COLLECTION:
+            self.tracer.set_attribute(
+                "PipelineAction", PipelineActionType.DATA_COLLECTION.name
+            )
             self._collect_data_for_parameter_tuning(X, y)
 
         if (
@@ -134,6 +137,9 @@ class PipelineStrategy:
             self.pipeline_actions.current_action
             == PipelineActionType.SCORE_AND_DETECT_DRIFT
         ):
+            self.tracer.set_attribute(
+                "PipelineAction", PipelineActionType.SCORE_AND_DETECT_DRIFT.name
+            )
             if self.incremental_training:
                 score = self._best_pipeline._progressive_score(X, y, detached=True)
             else:
@@ -157,14 +163,23 @@ class PipelineStrategy:
             self.pipeline_actions.current_action
             == PipelineActionType.PARTIAL_FIT_PIPELINE
         ):
+            self.tracer.set_attribute(
+                "PipelineAction", PipelineActionType.PARTIAL_FIT_PIPELINE.name
+            )
             self._partial_fit_pipeline(X, y, **fit_params)
 
         elif (
             self.pipeline_actions.current_action == PipelineActionType.PARTIAL_FIT_MODEL
         ):
+            self.tracer.set_attribute(
+                "PipelineAction", PipelineActionType.PARTIAL_FIT_MODEL.name
+            )
             self._partial_fit_model(X, y, **fit_params)
 
         elif self.pipeline_actions.current_action == PipelineActionType.FIT_MODEL:
+            self.tracer.set_attribute(
+                "PipelineAction", PipelineActionType.FIT_MODEL.name
+            )
             self._fit_model(X, y, **fit_params)
 
     def _collect_data_for_parameter_tuning(self, X, y):
@@ -205,16 +220,7 @@ class PipelineStrategy:
             f"Cluster resources: Nodes: {len(ray.nodes())}, Cluster CPU: {ray.cluster_resources()['CPU']}, Cluster Memory: {str(format(ray.cluster_resources()['memory'] / (1024 * 1024 * 1024), '.2f')) + ' GB'}"
         )
         try:
-            if self.tracer:
-                with self.tracer.trace("Pipeline-tuning"):
-                    fit_result = self.search_method.fit(
-                        X=self._input_X,
-                        y=self._input_y,
-                        warm_start=warm_start,
-                        tune_params=tune_params,
-                        **fit_params,
-                    )
-            else:
+            with self.tracer.trace("Pipeline-tuning"):
                 fit_result = self.search_method.fit(
                     X=self._input_X,
                     y=self._input_y,

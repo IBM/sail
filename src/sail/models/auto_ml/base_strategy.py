@@ -5,8 +5,8 @@ import pandas as pd
 import ray
 
 from sail.common.decorators import log_epoch
+from sail.telemetry import trace_with_action
 from sail.utils.logging import configure_logger
-from sail.common.tracing import TracingClient
 from sail.visualisation.tensorboard import TensorboardWriter
 
 LOGGER = configure_logger(logger_name="PipelineStrategy")
@@ -20,6 +20,7 @@ class PipelineActionType(Enum):
     FIT_MODEL = auto()
     PARTIAL_FIT_MODEL = auto()
     PARTIAL_FIT_PIPELINE = auto()
+    DRIFT_DETECTION = auto()
 
 
 class PipelineAction:
@@ -94,7 +95,7 @@ class PipelineStrategy:
         verbosity,
         incremental_training=False,
         tensorboard_log_dir=None,
-        tracer=TracingClient(),
+        tracer=None,
     ) -> None:
         self.search_method = search_method
         self.search_data_size = search_data_size
@@ -116,12 +117,7 @@ class PipelineStrategy:
     @log_epoch
     def next(self, X, y=None, tune_params={}, **fit_params):
         if self.pipeline_actions.current_action == PipelineActionType.DATA_COLLECTION:
-            with self.tracer.trace(
-                PipelineActionType.DATA_COLLECTION.name,
-                verbose=self.verbosity.get(),
-                epoch_no=self.verbosity.current_epoch_n,
-            ):
-                self._collect_data_for_parameter_tuning(X, y)
+            self._collect_data_for_parameter_tuning(X, y)
 
         if (
             self.pipeline_actions.current_action
@@ -139,63 +135,23 @@ class PipelineStrategy:
             self.pipeline_actions.current_action
             == PipelineActionType.SCORE_AND_DETECT_DRIFT
         ):
-            with self.tracer.trace(
-                PipelineActionType.SCORE_AND_DETECT_DRIFT.name,
-                verbose=self.verbosity.get(),
-                epoch_no=self.verbosity.current_epoch_n,
-            ):
-                if self.incremental_training:
-                    score = self._best_pipeline._progressive_score(X, y, detached=True)
-                else:
-                    score = self._best_pipeline.score(X, y)
-
-                y_pred = self._best_pipeline.predict(X)
-                is_drift_detected = self._detect_drift(
-                    score=score, y_pred=y_pred, y_true=y
-                )
-
-                # write progress to tensorboard
-                if self.tensorboard_log_dir:
-                    start_index = self.verbosity.samples_seen_n - len(y_pred)
-                    self.writer.write_predictions(y_pred, y, start_index=start_index)
-                    self.writer.write_score(
-                        score,
-                        self.verbosity.current_epoch_n,
-                        drift_point=is_drift_detected,
-                    )
-
-                if (not is_drift_detected) and self.incremental_training:
-                    self._partial_fit_pipeline(X, y, **fit_params)
+            self._score_and_detect_drift(X, y, **fit_params)
 
         elif (
             self.pipeline_actions.current_action
             == PipelineActionType.PARTIAL_FIT_PIPELINE
         ):
-            with self.tracer.trace(
-                PipelineActionType.PARTIAL_FIT_PIPELINE.name,
-                verbose=self.verbosity.get(),
-                epoch_no=self.verbosity.current_epoch_n,
-            ):
-                self._partial_fit_pipeline(X, y, **fit_params)
+            self._partial_fit_pipeline(X, y, **fit_params)
 
         elif (
             self.pipeline_actions.current_action == PipelineActionType.PARTIAL_FIT_MODEL
         ):
-            with self.tracer.trace(
-                PipelineActionType.PARTIAL_FIT_MODEL.name,
-                verbose=self.verbosity.get(),
-                epoch_no=self.verbosity.current_epoch_n,
-            ):
-                self._partial_fit_model(X, y, **fit_params)
+            self._partial_fit_model(X, y, **fit_params)
 
         elif self.pipeline_actions.current_action == PipelineActionType.FIT_MODEL:
-            with self.tracer.trace(
-                PipelineActionType.FIT_MODEL.name,
-                verbose=self.verbosity.get(),
-                epoch_no=self.verbosity.current_epoch_n,
-            ):
-                self._fit_model(X, y, **fit_params)
+            self._fit_model(X, y, **fit_params)
 
+    @trace_with_action(PipelineActionType.DATA_COLLECTION.name)
     def _collect_data_for_parameter_tuning(self, X, y):
         if not hasattr(self, "_input_X"):
             self._input_X = X
@@ -234,22 +190,11 @@ class PipelineStrategy:
             f"Cluster resources: Nodes: {len(ray.nodes())}, Cluster CPU: {ray.cluster_resources()['CPU']}, Cluster Memory: {str(format(ray.cluster_resources()['memory'] / (1024 * 1024 * 1024), '.2f')) + ' GB'}"
         )
         try:
-            with self.tracer.trace(
-                PipelineActionType.FIND_BEST_PIPELINE.name,
-                epoch_no=self.verbosity.current_epoch_n,
-            ):
-                fit_result = self.search_method.fit(
-                    X=self._input_X,
-                    y=self._input_y,
-                    warm_start=warm_start,
-                    tune_params=tune_params,
-                    **fit_params,
-                )
+            fit_result = self._tune_pipeline(tune_params, warm_start, **fit_params)
         except Exception as e:
-            LOGGER.error(e)
             ray.shutdown()
             raise Exception(
-                "Pipeline tuning failed. Disconnecting Ray cluster. Please check logs."
+                f"Pipeline tuning failed. Disconnecting Ray cluster. Please check logs: \n{str(e)}"
             )
         finally:
             ray.shutdown()
@@ -271,17 +216,57 @@ class PipelineStrategy:
 
         self.pipeline_actions.next()
 
+    @trace_with_action(PipelineActionType.FIND_BEST_PIPELINE.name)
+    def _tune_pipeline(self, tune_params, warm_start, **fit_params):
+        fit_result = self.search_method.fit(
+            X=self._input_X,
+            y=self._input_y,
+            warm_start=warm_start,
+            tune_params=tune_params,
+            **fit_params,
+        )
+        return fit_result
+
+    @trace_with_action(
+        PipelineActionType.SCORE_AND_DETECT_DRIFT.name, current_span=True
+    )
+    def _score_and_detect_drift(self, X, y, **fit_params):
+        if self.incremental_training:
+            score = self._best_pipeline._progressive_score(X, y, detached=True)
+        else:
+            score = self._best_pipeline.score(X, y)
+
+        y_pred = self._best_pipeline.predict(X)
+        is_drift_detected = self._detect_drift(score=score, y_pred=y_pred, y_true=y)
+
+        # write progress to tensorboard
+        if self.tensorboard_log_dir:
+            start_index = self.verbosity.samples_seen_n - len(y_pred)
+            self.writer.write_predictions(y_pred, y, start_index=start_index)
+            self.writer.write_score(
+                score,
+                self.verbosity.current_epoch_n,
+                drift_point=is_drift_detected,
+            )
+
+        if (not is_drift_detected) and self.incremental_training:
+            self._partial_fit_pipeline(X, y, **fit_params)
+
+    @trace_with_action(PipelineActionType.PARTIAL_FIT_PIPELINE.name)
     def _partial_fit_pipeline(self, X, y, **fit_params):
         self._best_pipeline._partial_fit(X, y, **fit_params)
 
+    @trace_with_action(PipelineActionType.PARTIAL_FIT_MODEL.name)
     def _partial_fit_model(self, X, y, **fit_params):
         self._best_pipeline.fit_final_estimator(X, y, warm_start=True, **fit_params)
         self.pipeline_actions.next()
 
+    @trace_with_action(PipelineActionType.FIT_MODEL.name)
     def _fit_model(self, X, y, **fit_params):
         self._best_pipeline.fit_final_estimator(X, y, warm_start=False, **fit_params)
         self.pipeline_actions.next()
 
+    @trace_with_action(PipelineActionType.DRIFT_DETECTION.name)
     def _detect_drift(self, **kwargs):
         self.drift_detector.set_verbose(self.verbosity.get())
         return self.detect_drift(**kwargs)

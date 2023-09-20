@@ -2,12 +2,12 @@ import copy
 import importlib
 import os
 import shutil
-from typing import Type, Union, Literal
+from typing import Literal, Type, Union
 
 import numpy as np
 from sklearn.base import BaseEstimator
 from sklearn.utils import check_array, check_X_y
-from sail.common.tracing import TracingClient
+
 from sail.common.decorators import validate_X_y
 from sail.common.helper import VerboseManager
 from sail.drift_detection.drift_detector import SAILDriftDetector
@@ -16,6 +16,7 @@ from sail.models.auto_ml.pipeline_strategy import DetectAndIncrement
 from sail.models.auto_ml.tune import SAILTuneGridSearchCV, SAILTuneSearchCV
 from sail.models.base import SAILModel
 from sail.pipeline import SAILPipeline
+from sail.telemetry import TracingClient
 from sail.utils.logging import configure_logger
 from sail.utils.serialization import load_obj, save_obj
 
@@ -36,7 +37,7 @@ class SAILAutoPipeline(SAILModel, BaseEstimator):
         verbosity_level: Literal[0, 1] | None = 1,
         verbosity_interval: int | None = None,
         tensorboard_log_dir: str = None,
-        tracer=TracingClient(),
+        tracer: TracingClient = None,
     ) -> None:
         self.pipeline = pipeline
         self.pipeline_params_grid = pipeline_params_grid

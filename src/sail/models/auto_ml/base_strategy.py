@@ -5,7 +5,7 @@ import pandas as pd
 import ray
 
 from sail.common.decorators import log_epoch
-from sail.telemetry import trace_with_action, trace_as_current_with_action
+from sail.telemetry import trace_with_action
 from sail.utils.logging import configure_logger
 from sail.visualisation.tensorboard import TensorboardWriter
 
@@ -192,10 +192,9 @@ class PipelineStrategy:
         try:
             fit_result = self._tune_pipeline(tune_params, warm_start, **fit_params)
         except Exception as e:
-            LOGGER.error(e)
             ray.shutdown()
             raise Exception(
-                "Pipeline tuning failed. Disconnecting Ray cluster. Please check logs."
+                f"Pipeline tuning failed. Disconnecting Ray cluster. Please check logs: \n{str(e)}"
             )
         finally:
             ray.shutdown()
@@ -228,7 +227,9 @@ class PipelineStrategy:
         )
         return fit_result
 
-    @trace_as_current_with_action(PipelineActionType.SCORE_AND_DETECT_DRIFT.name)
+    @trace_with_action(
+        PipelineActionType.SCORE_AND_DETECT_DRIFT.name, current_span=True
+    )
     def _score_and_detect_drift(self, X, y, **fit_params):
         if self.incremental_training:
             score = self._best_pipeline._progressive_score(X, y, detached=True)

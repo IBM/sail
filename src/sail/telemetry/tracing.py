@@ -60,7 +60,7 @@ class TracingClient:
     def __init__(
         self,
         service_name: str,
-        oltp_endpoint: str = None,
+        otlp_endpoint: str = None,
         span_exporter: SpanExporter = None,
     ) -> None:
         self.tracer_name = service_name
@@ -70,8 +70,8 @@ class TracingClient:
             resource=Resource.create({SERVICE_NAME: service_name})
         )
 
-        if oltp_endpoint is not None:
-            span_exporter = OTLPSpanExporter(endpoint=_append_trace_path(oltp_endpoint))
+        if otlp_endpoint is not None:
+            span_exporter = OTLPSpanExporter(endpoint=_append_trace_path(otlp_endpoint))
         elif span_exporter is None:
             span_exporter = OTLPSpanExporter()
 

@@ -36,6 +36,10 @@ class DetectAndIncrement(PipelineStrategy):
 
     def detect_drift(self, **kwargs):
         if self.drift_detector.detect_drift(**kwargs):
+            if self.verbosity.get() == 0:
+                print(
+                    f"\n>>> Epoch: {self.verbosity.current_epoch_n} | Samples Seen: {self.verbosity.samples_seen_n} -------------------------------------------------------------------------------------"
+                )
             LOGGER.info(
                 "Drift Detected in the data. Final Estimator will be incrementally trained on the next train()"
             )
@@ -72,6 +76,8 @@ class DetectAndRetrain(PipelineStrategy):
 
     def detect_drift(self, **kwargs):
         if self.drift_detector.detect_drift(**kwargs):
+            if self.verbosity.get() == 0:
+                self.verbosity.print_epoch_head()
             LOGGER.info(
                 "Drift Detected in the data. Final Estimator will be re-trained on the next train()"
             )
@@ -108,6 +114,8 @@ class DetectAndWarmStart(PipelineStrategy):
 
     def detect_drift(self, **kwargs):
         if self.drift_detector.detect_drift(**kwargs):
+            if self.verbosity.get() == 0:
+                self.verbosity.print_epoch_head()
             LOGGER.info(
                 "Drift Detected in the data. SAIL AutoML will re-start with previously evaluated configurations on the next train()"
             )
@@ -143,6 +151,8 @@ class DetectAndRestart(PipelineStrategy):
 
     def detect_drift(self, **kwargs):
         if self.drift_detector.detect_drift(**kwargs):
+            if self.verbosity.get() == 0:
+                self.verbosity.print_epoch_head()
             LOGGER.info(
                 "Drift Detected in the data. SAIL AutoML will re-start from scratch on the next train()"
             )

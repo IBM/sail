@@ -88,8 +88,6 @@ class TracingClient:
         verbose=1,
     ):
         if verbose == 1:
-            if hasattr(self, "_parent_span"):
-                context = set_span_in_context(self._parent_span)
             return self._tracer.start_as_current_span(
                 span_name, context=context, kind=kind
             )
@@ -104,8 +102,6 @@ class TracingClient:
         verbose=1,
     ):
         if verbose == 1:
-            if hasattr(self, "_parent_span"):
-                context = set_span_in_context(self._parent_span)
             return self._tracer.start_span(span_name, context=context, kind=kind)
         else:
             return DummySpan()

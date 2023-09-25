@@ -4,7 +4,7 @@
 # Paper repository: https://github.com/locuslab/TCN
 # By Kasper Hjort Berthelsen and Mads Ehrhorn
 
-from skorch.regressor import NeuralNetRegressor
+from sail.models.torch import SAILTorchRegressor
 
 import torch
 import torch.nn as nn
@@ -53,13 +53,13 @@ class _ResidualBlock(nn.Module):
             input_dim,
             num_filters,
             kernel_size,
-            dilation=(dilation_base ** nr_blocks_below),
+            dilation=(dilation_base**nr_blocks_below),
         )
         self.conv2 = nn.Conv1d(
             num_filters,
             output_dim,
             kernel_size,
-            dilation=(dilation_base ** nr_blocks_below),
+            dilation=(dilation_base**nr_blocks_below),
         )
         if weight_norm:
             self.conv1, self.conv2 = wn(self.conv1), wn(self.conv2)
@@ -79,7 +79,7 @@ class _ResidualBlock(nn.Module):
         """
         residual = x
 
-        left_padding = (self.dilation_base ** self.nr_blocks_below) * (
+        left_padding = (self.dilation_base**self.nr_blocks_below) * (
             self.kernel_size - 1
         )
         x = F.pad(x, (left_padding, 0))
@@ -175,7 +175,7 @@ class TCNModel(nn.Module):
         return x
 
 
-class TCNRegressor(NeuralNetRegressor):
+class TCNRegressor(SAILTorchRegressor):
     """Basic NeuralNetRegressor wrapper for TCNModel.
 
     Args:
@@ -200,7 +200,7 @@ class TCNRegressor(NeuralNetRegressor):
         dilation_base: int = 2,
         weight_norm: bool = False,
         dropout: float = 0.2,
-        **kwargs
+        **kwargs,
     ):
         super(TCNRegressor, self).__init__(
             module=TCNModel,
@@ -215,5 +215,5 @@ class TCNRegressor(NeuralNetRegressor):
             train_split=None,
             max_epochs=1,
             batch_size=20,
-            **kwargs
+            **kwargs,
         )

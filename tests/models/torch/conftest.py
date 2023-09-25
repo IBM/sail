@@ -28,10 +28,16 @@ def seeds_fixed():
 @pytest.fixture(scope="module")
 def regression_data():
     X, y = make_regression(1000, 10, n_informative=10, bias=0, random_state=0)
-    X, y = X.astype(np.float32), y.astype(np.float32).reshape(-1, 1)
+    X, y = X.astype(np.float32), y.astype(np.float32).reshape((-1,))
     Xt = StandardScaler().fit_transform(X)
-    yt = StandardScaler().fit_transform(y)
-    return Xt, yt
+    return Xt, y
+
+
+@pytest.fixture(scope="module")
+def classification_data():
+    X, y = make_classification(30, 10, n_informative=5, random_state=0)
+    X, y = X.astype(np.float32), y.astype(np.int64).reshape((-1,))
+    return X, y
 
 
 torch_installed = False

@@ -11,7 +11,7 @@ import math
 import numpy as np
 import torch.nn as nn 
 import torch.optim as optim
-from skorch.classifier import NeuralNetClassifier
+from sail.models.torch import SAILTorchClassifier
 
 
 def get_Prime_number_in_a_range(start, end):
@@ -178,7 +178,7 @@ class _OS_CNN(nn.Module):
         return X
     
 
-class OS_CNN_CLassifier(NeuralNetClassifier):
+class OS_CNN_CLassifier(SAILTorchClassifier):
     """
     Basic OS_CNN model
     

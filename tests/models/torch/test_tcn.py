@@ -4,6 +4,7 @@ Based on: https://github.com/skorch-dev/skorch/blob/master/skorch/tests/test_reg
 
 import numpy as np
 import pytest
+from sklearn.preprocessing import StandardScaler
 
 
 class TestTCN:
@@ -17,13 +18,15 @@ class TestTCN:
     def net_partial_fit(self, net, regression_data):
         X, y = regression_data
         X = X[:, :, np.newaxis]
-        for _ in range(10):
+        y = StandardScaler().fit_transform(y.reshape((-1, 1)))
+        for _ in range(50):
             net.partial_fit(X, y)
         return net
 
     def test_net_learns(self, net, regression_data):
         X, y = regression_data
         X = X[:, :, np.newaxis]
+        y = StandardScaler().fit_transform(y.reshape((-1, 1)))
         for _ in range(3):
             net.partial_fit(X, y)
         train_losses = net.history[:, "train_loss"]
@@ -32,6 +35,7 @@ class TestTCN:
     def test_predict_predict_proba(self, net_partial_fit, regression_data):
         X = regression_data[0]
         X = X[:, :, np.newaxis]
+
         y_pred = net_partial_fit.predict(X)
 
         # predictions should not be all zeros
@@ -44,5 +48,6 @@ class TestTCN:
     def test_score(self, net_partial_fit, regression_data):
         X, y = regression_data
         X = X[:, :, np.newaxis]
+        y = StandardScaler().fit_transform(y.reshape((-1, 1)))
         r2_score = net_partial_fit.score(X, y)
         assert r2_score <= 1.0 and r2_score > 0.9

@@ -31,12 +31,10 @@ class TestTorchSerialization:
         for name, param in model_1.module_.named_parameters():
             model_1_weights[name] = param.data.numpy()
         model_1_loss = model_1.history[:, "train_loss"]
-        model_1.save(dirpath)
+        model_1.save_model(dirpath)
 
         # load a new model and record stats
-        model_2 = self.rnn_regressor()
-        model_2.initialize()
-        model_2.load(dirpath)
+        model_2 = RNNRegressor.load_model(dirpath)
         model_2_weights = {}
         for name, param in model_2.module_.named_parameters():
             model_2_weights[name] = param.data.numpy()

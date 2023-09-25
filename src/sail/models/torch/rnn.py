@@ -1,7 +1,6 @@
 import torch
 import torch.nn as nn
-from skorch.regressor import NeuralNetRegressor
-from sail.models.torch.base import TorchSerializationMixin
+from sail.models.torch.base import SAILTorchRegressor
 
 
 class _RNNModel(nn.Module):
@@ -64,7 +63,6 @@ class _RNNModel(nn.Module):
         self.dtype = torch.float
 
     def forward(self, x, h0=None, train=False):
-
         hs = x  # initiate hidden state
         if h0 is None:
             h = torch.zeros(hs.shape[0], self.hidden_units)
@@ -82,10 +80,15 @@ class _RNNModel(nn.Module):
         y = self.out(hs)
         # return y, (h,c)
 
+        if self.output_units == 1:
+            y = y.view(
+                y.size(0),
+            )
+
         return y
 
 
-class RNNRegressor(NeuralNetRegressor, TorchSerializationMixin):
+class RNNRegressor(SAILTorchRegressor):
     """Basic RNN/LSTM/GRU model.
 
     Args:
@@ -124,8 +127,5 @@ class RNNRegressor(NeuralNetRegressor, TorchSerializationMixin):
             module__output_nonlin=output_nonlin,
             module__squeeze_output=squeeze_output,
             module__cell_type=cell_type,
-            train_split=None,
-            max_epochs=1,
-            batch_size=20,
             **kwargs,
         )

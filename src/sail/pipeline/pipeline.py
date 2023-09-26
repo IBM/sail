@@ -12,15 +12,17 @@ from sklearn.pipeline import Pipeline
 from sklearn.utils import _print_elapsed_time
 from sklearn.utils.metaestimators import available_if
 from sklearn.utils.validation import check_is_fitted
-from skorch.regressor import NeuralNetRegressor
+
+# from skorch.regressor import NeuralNetRegressor
 
 from sail.models.base import SAILModel
 from sail.common.decorators import log_epoch
 from sail.common.helper import VerboseManager
 from sail.common.progress_bar import SAILProgressBar
 from sail.common.scorer import SAILModelScorer
-from sail.models.torch.base import TorchSerializationMixin
-from sail.models.keras.base import KerasSerializationMixin
+
+# from sail.models.torch.base import TorchSerializationMixin
+# from sail.models.keras.base import KerasSerializationMixin
 from sail.utils.logging import configure_logger
 from sail.utils.serialization import load_obj, save_obj
 
@@ -369,12 +371,12 @@ class SAILPipeline(Pipeline):
             estimator = self.steps[-1][1]
 
             attributes = None
-            if isinstance(estimator, NeuralNetRegressor):
-                attributes = (
-                    attributes
-                    or [module + "_" for module in estimator._modules]
-                    or ["module_"]
-                )
+            # if isinstance(estimator, NeuralNetRegressor):
+            #     attributes = (
+            #         attributes
+            #         or [module + "_" for module in estimator._modules]
+            #         or ["module_"]
+            #     )
 
             check_is_fitted(estimator=estimator, attributes=attributes)
             return True
@@ -506,11 +508,11 @@ class SAILPipeline(Pipeline):
         estimator_name = steps_meta[-1]
         estimator_path = os.path.join(load_location, "steps", estimator_name)
 
-        if Path(os.path.join(estimator_path, ".pytorch")).exists():
-            estimator = TorchSerializationMixin.load_model(estimator_path)
-        elif Path(os.path.join(estimator_path, ".keras")).exists():
-            estimator = KerasSerializationMixin.load_model(estimator_path)
-        elif Path(os.path.join(estimator_path, ".sailmodel")).exists():
+        # if Path(os.path.join(estimator_path, ".pytorch")).exists():
+        #     estimator = TorchSerializationMixin.load_model(estimator_path)
+        # elif Path(os.path.join(estimator_path, ".keras")).exists():
+        #     estimator = KerasSerializationMixin.load_model(estimator_path)
+        if Path(os.path.join(estimator_path, ".sailmodel")).exists():
             estimator = SAILModel.load_model(estimator_path)
         else:
             # Try the default load method

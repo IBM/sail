@@ -1,7 +1,8 @@
 from array import array
 
 import numpy as np
-from river import linear_model, optim
+from river import optim
+from sail.models.river.linear_model import LogisticRegression
 from river.datasets import synth
 
 from sail.models.ensemble.distAggregateClassifier import DistAggregateClassifier
@@ -22,8 +23,7 @@ class TestDistAggregateClassifier:
         # prepare the ensemble
         learner = DistAggregateClassifier(
             estimators=[
-                linear_model.LogisticRegression(optimizer=o, intercept_lr=0.1)
-                for o in optimizers
+                LogisticRegression(optimizer=o, intercept_lr=0.1) for o in optimizers
             ]
         )
         cnt = 0
@@ -49,8 +49,7 @@ class TestDistAggregateClassifier:
 
         learner = DistAggregateClassifier(
             estimators=[
-                linear_model.LogisticRegression(optimizer=o, intercept_lr=0.1)
-                for o in optimizers
+                LogisticRegression(optimizer=o, intercept_lr=0.1) for o in optimizers
             ],
             aggregator="majority_vote",
         )

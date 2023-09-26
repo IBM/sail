@@ -1,13 +1,17 @@
 import glob
 import os
 import time
-
+import seaborn as sns
 import numpy as np
 import torch
+import matplotlib.pyplot as plt
 from torch.utils.tensorboard import FileWriter, SummaryWriter
-from torch.utils.tensorboard.summary import scalar
-
+from torch.utils.tensorboard.summary import scalar, image
+from torch.utils.tensorboard._utils import figure_to_image
+from sklearn.metrics import confusion_matrix
 from sail.utils.logging import configure_logger
+import pandas as pd
+from sklearn.metrics import classification_report
 
 LOGGER = configure_logger(logger_name="TensorboardWriter")
 
@@ -73,24 +77,61 @@ class TensorboardWriter(SummaryWriter):
                 score,
                 epoch_n,
             )
-
-        #     self.add_scalars_custom(
-        #         "Score_and_Detect",
-        #         {
-        #             "Drift": np.nan,
-        #         },
-        #         epoch_n,
-        #         include_main_tag=False,
-        #     )
-        #     self.add_scalars_custom(
-        #         "Score_and_Detect",
-        #         {
-        #             "Drift": score,
-        #         },
-        #         epoch_n,
-        #         include_main_tag=False,
-        #     )
         self.flush()
+
+    def write_classification_report(self, y_pred, y_true, epoch_n):
+        figure, (ax1, ax2) = plt.subplots(2, 1)
+        figure.set_size_inches(6, 6)
+        figure.set_dpi(150)
+
+        cf_matrix = confusion_matrix(y_true, y_pred)
+        sns.heatmap(
+            cf_matrix / np.sum(cf_matrix), annot=True, fmt=".2%", cmap="Blues", ax=ax1
+        )
+        sns.heatmap(
+            pd.DataFrame(
+                classification_report(
+                    y_true, y_pred, target_names=["0", "1"], output_dict=True
+                )
+            )
+            .iloc[:-1, :]
+            .T,
+            annot=True,
+            ax=ax2,
+        )
+        ax1.title.set_text("Confusion Matrx")
+        ax2.title.set_text("Classfication Report")
+
+        self.add_image_custom(
+            tag="Confusion_matrix",
+            figure=figure,
+            global_step=epoch_n,
+        )
+        self.flush()
+
+    def add_image_custom(
+        self,
+        tag,
+        figure,
+        global_step=None,
+        walltime=None,
+        close=True,
+        dataformats="CHW",
+    ):
+        fw_tag = self.log_dir + "/" + tag
+        if self.all_writers and fw_tag in self.all_writers.keys():
+            fw = self.all_writers[fw_tag]
+        else:
+            fw = FileWriter(
+                fw_tag, self.max_queue, self.flush_secs, self.filename_suffix
+            )
+            self.all_writers[fw_tag] = fw
+
+        fw.add_summary(
+            image(tag, figure_to_image(figure, close), dataformats=dataformats),
+            global_step,
+            walltime,
+        )
 
     def add_scalar(
         self,

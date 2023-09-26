@@ -164,10 +164,9 @@ class PipelineStrategy:
             self._input_y = np.hstack((self._input_y, y))
 
         if self._input_X.shape[0] < self.search_data_size:
-            if self.verbosity.get() == 1:
-                LOGGER.info(
-                    f"Collecting data for pipeline tuning. Current Batch Size: {self._input_X.shape[0]}. Required: {self.search_data_size}"
-                )
+            LOGGER.info(
+                f"Collecting data for pipeline tuning. Current Batch Size: {self._input_X.shape[0]}. Required: {self.search_data_size}"
+            )
         else:
             LOGGER.info(
                 f"Data collection completed for pipeline tuning. Final Batch Size: {self._input_X.shape[0]}."
@@ -241,11 +240,16 @@ class PipelineStrategy:
 
         # write progress to tensorboard
         if self.tensorboard_log_dir:
-            start_index = self.verbosity.samples_seen_n - len(y_pred)
-            self.writer.write_predictions(y_pred, y, start_index=start_index)
+            if self._best_pipeline.steps[-1][1]._estimator_type == "classifier":
+                self.writer.write_classification_report(
+                    y_pred, y, epoch_n=self.verbosity.current_epoch_n
+                )
+            else:
+                start_index = self.verbosity.samples_seen_n - len(y_pred)
+                self.writer.write_predictions(y_pred, y, start_index=start_index)
             self.writer.write_score(
-                score,
-                self.verbosity.current_epoch_n,
+                score=score,
+                epoch_n=self.verbosity.current_epoch_n,
                 drift_point=is_drift_detected,
             )
 

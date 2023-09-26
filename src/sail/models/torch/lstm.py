@@ -1,6 +1,6 @@
 import torch
 import torch.nn as nn
-from skorch.regressor import NeuralNetRegressor
+from sail.models.torch import SAILTorchRegressor
 from sail.models.torch.base import TorchSerializationMixin
 
 
@@ -50,7 +50,7 @@ class ContextlessMSE(torch.nn.MSELoss):
         return super().forward(y, y_true)
 
 
-class LSTMRegressor(NeuralNetRegressor, TorchSerializationMixin):
+class LSTMRegressor(SAILTorchRegressor):
     def __init__(self, ni, no, nh, nlayers, module=LSTMModel, **kwargs):
         super(LSTMRegressor, self).__init__(
             module=module,
@@ -58,5 +58,5 @@ class LSTMRegressor(NeuralNetRegressor, TorchSerializationMixin):
             module__no=no,
             module__nh=nh,
             module__nlayers=nlayers,
-            **kwargs
+            **kwargs,
         )

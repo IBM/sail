@@ -1,5 +1,5 @@
 import os
-
+from pathlib import Path
 from sail.utils.logging import configure_logger
 from sail.utils.serialization import load_obj, save_obj
 
@@ -19,22 +19,25 @@ class SAILModel:
     def score(self):
         raise NotImplementedError
 
-    def save_model(self, model_folder):
+    def save_model(self, model_folder, file_name="model"):
         """Saves the sail model to pickle format.
 
         Args:
             model_folder: String, PathLike, path to SavedModel.
         """
-        model_path = os.path.join(model_folder, "model")
+        Path(model_folder).mkdir(parents=True, exist_ok=True)
         save_obj(
             self,
-            model_path,
-            str(self.__class__.__name__),
-            serialize_type="joblib",
+            model_folder,
+            file_name,
         )
+
+        Path(os.path.join(model_folder, ".sailmodel")).touch()
+
         LOGGER.info("Model saved successfully.")
 
-    def load_model(self, model_folder):
+    @classmethod
+    def load_model(cls, model_folder, file_name="model"):
         """Load the sail model from the mentioned folder location
 
         Args:
@@ -44,11 +47,7 @@ class SAILModel:
         Returns:
             BaseModel: Model
         """
-        model_path = os.path.join(model_folder, "model")
-        model = load_obj(
-            model_path,
-            str(self.__class__.__name__),
-            serialize_type="joblib",
-        )
+        model = load_obj(model_folder, file_name)
         LOGGER.info("Model loaded successfully.")
+
         return model

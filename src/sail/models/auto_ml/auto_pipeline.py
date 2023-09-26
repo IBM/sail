@@ -326,6 +326,10 @@ class SAILAutoPipeline(SAILModel, BaseEstimator):
         # -------------------------------------------
         # save rest of the params
         # -------------------------------------------
+
+        # remove unpicklable params
+        params.pop("tracer")
+
         save_obj(
             obj=params,
             location=save_location,

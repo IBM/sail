@@ -57,9 +57,11 @@ class SAILModelScorer:
         ), "Either scoring or estimator_type must be a non null value."
 
         if scoring is None:
-            assert (
-                estimator_type != "passthrough",
-            ), "Scoring cannot be None when the estimator_type is set to passthrough"
+            # fmt: off
+            assert  estimator_type != "passthrough", \
+                "Scoring cannot be None when the estimator_type is set to passthrough"
+            
+
             return self.get_default_scorer(estimator_type)
 
         try:
@@ -96,7 +98,11 @@ class SAILModelScorer:
                 f"Method '{method_name}' is not available in river.metrics. Scoring must be a str or an instance of the {river.metrics.__all__}."
             )
 
+    def validate_inputs(self, y_true, y_pred):
+        return np.asarray(y_true).reshape((-1,)), np.asarray(y_pred).reshape((-1,))
+
     def score(self, y_true, y_pred, sample_weight=None, verbose=1):
+        y_true, y_pred = self.validate_inputs(y_true, y_pred)
         with SAILProgressBar(
             steps=len(y_pred),
             desc=f"SAIL {self._scorer_type} Score",
@@ -119,6 +125,7 @@ class SAILModelScorer:
     def progressive_score(
         self, y_true, y_pred, sample_weight=None, detached=False, verbose=1
     ):
+        y_true, y_pred = self.validate_inputs(y_true, y_pred)
         with SAILProgressBar(
             steps=len(y_pred),
             desc=f"SAIL {self._scorer_type} Progressive Score",

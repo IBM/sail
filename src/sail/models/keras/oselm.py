@@ -3,10 +3,9 @@ Keras wrapper for The Online Sequential Extreme Learning Machine (OSELM).
 """
 
 import tensorflow as tf
-from scikeras.wrappers import KerasRegressor
 from tensorflow.python.keras.engine import data_adapter
 
-from sail.models.keras.base import KerasSerializationMixin
+from sail.models.keras import SAILKerasRegressor
 
 
 class _Model(tf.keras.Model):
@@ -14,15 +13,14 @@ class _Model(tf.keras.Model):
         self,
         num_hidden_nodes: int = 100,
         hidden_layer_activation: str = "sigmoid",
-        prediction_window_size: int = 1,
+        num_output_nodes: int = 1,
         forgetting_factor: float = 0.9,
     ):
         super(_Model, self).__init__()
-        self.prediction_window_size = prediction_window_size
-        self.forgetting_factor = forgetting_factor
         self.num_hidden_nodes = num_hidden_nodes
-        self.num_output_nodes = self.prediction_window_size
         self.hidden_layer_activation = hidden_layer_activation
+        self.num_output_nodes = num_output_nodes
+        self.forgetting_factor = forgetting_factor
 
     def get_config(self):
         """
@@ -33,7 +31,7 @@ class _Model(tf.keras.Model):
         return {
             "num_hidden_nodes": self.num_hidden_nodes,
             "forgetting_factor": self.forgetting_factor,
-            "prediction_window_size": self.prediction_window_size,
+            "num_output_nodes": self.num_output_nodes,
             "hidden_layer_activation": self.hidden_layer_activation,
         }
 
@@ -51,13 +49,9 @@ class _Model(tf.keras.Model):
         self.hidden_layer = tf.keras.layers.Dense(
             units=self.num_hidden_nodes,
             input_shape=(n_input_nodes,),
-            kernel_initializer=tf.keras.initializers.RandomUniform(
-                minval=-1, maxval=1
-            ),
+            kernel_initializer=tf.keras.initializers.RandomUniform(minval=-1, maxval=1),
             use_bias=True,
-            bias_initializer=tf.keras.initializers.RandomUniform(
-                minval=-1, maxval=1
-            ),
+            bias_initializer=tf.keras.initializers.RandomUniform(minval=-1, maxval=1),
             activation=self.hidden_layer_activation,
             dtype=tf.float32,
             name="hidden_layer",
@@ -79,7 +73,6 @@ class _Model(tf.keras.Model):
             name="beta",
         )
 
-    @tf.autograph.experimental.do_not_convert
     def call(self, inputs, training=None):
         """
         Calls the model on new inputs and returns the outputs as tensors.
@@ -163,9 +156,7 @@ class _Model(tf.keras.Model):
         )
         pHT = tf.matmul(self.__p, HT)
         Hbeta = tf.matmul(H, self.__beta)
-        self.__beta.assign(
-            self.__beta + tf.matmul(pHT, tf.subtract(targets, Hbeta))
-        )
+        self.__beta.assign(self.__beta + tf.matmul(pHT, tf.subtract(targets, Hbeta)))
 
         # use __beta to make final prediction
         predictions = tf.matmul(H, self.__beta)
@@ -181,7 +172,7 @@ class _Model(tf.keras.Model):
         return {m.name: m.result() for m in self.metrics}
 
 
-class OSELM(KerasRegressor, KerasSerializationMixin):
+class OSELM(SAILKerasRegressor):
     """
     Keras wrapper for The Online Sequential Extreme Learning Machine (OSELM).
 
@@ -229,7 +220,7 @@ class OSELM(KerasRegressor, KerasSerializationMixin):
         verbose=0,
         num_hidden_nodes=25,
         hidden_layer_activation=tf.nn.sigmoid,
-        prediction_window_size=1,
+        num_output_nodes=1,
         forgetting_factor=0.5,
         **kwargs,
     ) -> None:
@@ -237,7 +228,7 @@ class OSELM(KerasRegressor, KerasSerializationMixin):
             _Model(
                 num_hidden_nodes,
                 hidden_layer_activation,
-                prediction_window_size,
+                num_output_nodes,
                 forgetting_factor,
             ),
             loss=loss,
@@ -247,8 +238,3 @@ class OSELM(KerasRegressor, KerasSerializationMixin):
             verbose=verbose,
             **kwargs,
         )
-        self.prediction_window_size = prediction_window_size
-
-    def _ensure_compiled_model(self) -> None:
-        super()._ensure_compiled_model()
-        self.model_.outputs = [1] * self.prediction_window_size

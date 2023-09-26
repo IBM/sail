@@ -3,28 +3,25 @@ Regressor for ensemble models
 Based on: https://github.com/yzhao062/combo/blob/master/combo/models/base.py extended for
 parallelizable incremental and batch learning algorithms.
 """
-import typing
-from river import base
-from river import optim
-from .base import BaseAggregator
-from river.compat import convert_river_to_sklearn
-import ray
 import numpy as np
+import ray
+from river import optim
+
 from sail.utils.ray_utils import _model_fit
 
+from .base import BaseAggregator
 
 __all__ = ["DistAggregateRegressor"]
 
 
 class DistAggregateRegressor(BaseAggregator):
-
     def __init__(
         self,
         estimators,
-        fitted_estimators = [],
-        loss = None,
+        fitted_estimators=[],
+        loss=None,
         learning_rate=0.5,
-        aggregator="simple"
+        aggregator="simple",
     ):
         """
         :param estimators: Estimator objects with partial_fit defined
@@ -33,17 +30,13 @@ class DistAggregateRegressor(BaseAggregator):
                 Used only for scoring.
         :param aggregator: Type of aggregator. Options are "simple", "windsor" and "trim"
         """
-        # if len(estimators) < 2:
-        #     raise NotEnoughModels(n_expected=2, n_obtained=len(estimators))
-
         self.loss = optim.losses.Squared() if loss is None else loss
         self.learning_rate = learning_rate
         self.weights = [1.0] * len(estimators)
         self.aggregator = aggregator
-        estimators = [convert_river_to_sklearn(est) if "river" in est.__module__ else est
-                      for est in estimators]
-        # self.estimators = [est.remote() for est in estimators]
-        super().__init__(base_estimators=estimators, fitted_estimators=fitted_estimators)
+        super().__init__(
+            base_estimators=estimators, fitted_estimators=fitted_estimators
+        )
 
     def _partial_fit(self, X, y=None, **kwargs):
         """
@@ -90,11 +83,24 @@ class DistAggregateRegressor(BaseAggregator):
             y_pred = np.nanmean(X_ensemble, axis=1)[0]
         # Windsorized
         if self.aggregator == "windsor":
-            y_pred = ((np.sum(X_ensemble, axis=1) - np.amax(X_ensemble, axis=1) - np.amin(X_ensemble, axis=1)
-                       + np.sort(X_ensemble)[:, 1] + np.sort(X_ensemble)[:, -2]) / (
-                    X_ensemble.shape[1]))[0]
+            y_pred = (
+                (
+                    np.sum(X_ensemble, axis=1)
+                    - np.amax(X_ensemble, axis=1)
+                    - np.amin(X_ensemble, axis=1)
+                    + np.sort(X_ensemble)[:, 1]
+                    + np.sort(X_ensemble)[:, -2]
+                )
+                / (X_ensemble.shape[1])
+            )[0]
         # Trimmed
         if self.aggregator == "trim":
-            y_pred = ((np.sum(X_ensemble, axis=1) - np.amax(X_ensemble, axis=1) -
-                      np.amin(X_ensemble, axis=1)) / (X_ensemble.shape[1] - 2))[0]
+            y_pred = (
+                (
+                    np.sum(X_ensemble, axis=1)
+                    - np.amax(X_ensemble, axis=1)
+                    - np.amin(X_ensemble, axis=1)
+                )
+                / (X_ensemble.shape[1] - 2)
+            )[0]
         return y_pred

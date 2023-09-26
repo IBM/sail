@@ -63,7 +63,8 @@ class TracingClient:
         otlp_endpoint: str = None,
         span_exporter: SpanExporter = None,
     ) -> None:
-        self.tracer_name = service_name
+        self.service_name = service_name
+        self.otlp_endpoint = otlp_endpoint
         self.span_exporter = span_exporter
 
         provider = TracerProvider(

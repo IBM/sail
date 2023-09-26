@@ -5,12 +5,12 @@ parallelizable, incremental and batch learning algorithms.
 """
 
 import typing
-from river import base
-from river import optim
-from sail.models.ensemble.base import BaseAggregator
-from river.compat import convert_river_to_sklearn
-import ray
+
 import numpy as np
+import ray
+from river import base
+
+from sail.models.ensemble.base import BaseAggregator
 from sail.utils.ray_utils import _model_fit
 
 __all__ = ["DistAggregateClassifier"]
@@ -19,7 +19,7 @@ __all__ = ["DistAggregateClassifier"]
 class DistAggregateClassifier(BaseAggregator):
     def __init__(
         self,
-        estimators: typing.List[base.Classifier],
+        estimators,
         fitted_estimators: typing.List[base.Classifier] = [],
         learning_rate=0.5,
         aggregator="maximization",
@@ -37,10 +37,6 @@ class DistAggregateClassifier(BaseAggregator):
         self.learning_rate = learning_rate
         self.weights = [1.0] * len(estimators)
         self.aggregator = aggregator
-        estimators = [
-            convert_river_to_sklearn(est) if "river" in est.__module__ else est
-            for est in estimators
-        ]
         super().__init__(
             base_estimators=estimators, fitted_estimators=fitted_estimators
         )

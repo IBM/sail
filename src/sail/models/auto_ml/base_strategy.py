@@ -164,10 +164,9 @@ class PipelineStrategy:
             self._input_y = np.hstack((self._input_y, y))
 
         if self._input_X.shape[0] < self.search_data_size:
-            if self.verbosity.get() == 1:
-                LOGGER.info(
-                    f"Collecting data for pipeline tuning. Current Batch Size: {self._input_X.shape[0]}. Required: {self.search_data_size}"
-                )
+            LOGGER.info(
+                f"Collecting data for pipeline tuning. Current Batch Size: {self._input_X.shape[0]}. Required: {self.search_data_size}"
+            )
         else:
             LOGGER.info(
                 f"Data collection completed for pipeline tuning. Final Batch Size: {self._input_X.shape[0]}."

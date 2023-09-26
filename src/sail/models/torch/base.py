@@ -84,20 +84,20 @@ class TorchSerializationMixin:
         return model
 
 
-class TorchParamsMixin:
+class TorchInputMixin:
     def fit(self, X, y=None, **fit_params):
-        X, y = self.cast_params(X, y)
+        X, y = self.cast_X_y(X, y)
         return super().fit(X, y, **fit_params)
 
     def partial_fit(self, X, y=None, classes=None, **fit_params):
-        X, y = self.cast_params(X, y)
+        X, y = self.cast_X_y(X, y)
         return super().partial_fit(X, y, classes, **fit_params)
 
     def predict(self, X):
-        X = self.cast_params(X)
+        X = self.cast_X_y(X)
         return super().predict(X)
 
-    def cast_params(self, X, y=None):
+    def cast_X_y(self, X, y=None):
         if not isinstance(X, torch.Tensor):
             X = np.asarray(X).astype(np.float32)
         if y is not None:
@@ -111,7 +111,7 @@ class TorchParamsMixin:
 
 
 class SAILTorchRegressor(
-    TorchParamsMixin, NeuralNetRegressor, TorchSerializationMixin, SAILModel
+    TorchInputMixin, NeuralNetRegressor, TorchSerializationMixin, SAILModel
 ):
     def __init__(self, *args, max_epochs=1, batch_size=-1, train_split=None, **kwargs):
         super(SAILTorchRegressor, self).__init__(
@@ -124,7 +124,7 @@ class SAILTorchRegressor(
 
 
 class SAILTorchClassifier(
-    TorchParamsMixin, NeuralNetClassifier, TorchSerializationMixin, SAILModel
+    TorchInputMixin, NeuralNetClassifier, TorchSerializationMixin, SAILModel
 ):
     def __init__(
         self,

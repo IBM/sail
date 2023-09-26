@@ -20,6 +20,7 @@ from sail.common.helper import VerboseManager
 from sail.common.progress_bar import SAILProgressBar
 from sail.common.scorer import SAILModelScorer
 from sail.models.torch.base import TorchSerializationMixin
+from sail.models.keras.base import KerasSerializationMixin
 from sail.utils.logging import configure_logger
 from sail.utils.serialization import load_obj, save_obj
 
@@ -507,6 +508,8 @@ class SAILPipeline(Pipeline):
 
         if Path(os.path.join(estimator_path, ".pytorch")).exists():
             estimator = TorchSerializationMixin.load_model(estimator_path)
+        elif Path(os.path.join(estimator_path, ".keras")).exists():
+            estimator = KerasSerializationMixin.load_model(estimator_path)
         elif Path(os.path.join(estimator_path, ".sailmodel")).exists():
             estimator = SAILModel.load_model(estimator_path)
         else:

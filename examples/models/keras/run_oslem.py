@@ -14,7 +14,7 @@ model = OSELM(
     verbose=0,
     num_hidden_nodes=25,
     hidden_layer_activation=tf.nn.sigmoid,
-    prediction_window_size=1,
+    num_output_nodes=1,
     forgetting_factor=0.5,
 )
 
@@ -72,9 +72,7 @@ T = t_train_seq
 
 for i in range(numLags, 800):
     model.partial_fit(np.array(X[[i], :]), np.array(T[[i], :]), verbose=0)
-    train_dataset = tf.data.Dataset.from_tensor_slices(
-        (X[[i], :], T[[i], :])
-    ).batch(1)
+    train_dataset = tf.data.Dataset.from_tensor_slices((X[[i], :], T[[i], :])).batch(1)
     Y = model.predict(X[[i + 1], :])
     predictions.append(Y[0][0])
     target.append(T[i][0])
@@ -105,9 +103,7 @@ print("NRMSE {}".format(nrmse))
 
 algorithm = "OSELM"
 plt.figure(figsize=(15, 6))
-(targetPlot,) = plt.plot(
-    target, label="target", color="red", marker=".", linestyle="-"
-)
+(targetPlot,) = plt.plot(target, label="target", color="red", marker=".", linestyle="-")
 (predictedPlot,) = plt.plot(
     predictions, label="predicted", color="blue", marker=".", linestyle=":"
 )

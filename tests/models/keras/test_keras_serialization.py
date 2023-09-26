@@ -26,9 +26,7 @@ class TestKerasSerialization:
 
     def test_model_serialization(self, regression_dataset, create_tmp_dir):
         dirpath = create_tmp_dir
-        X, y = generate_features_and_targets(
-            regression_dataset, "Global_active_power"
-        )
+        X, y = generate_features_and_targets(regression_dataset, "Global_active_power")
         model_1 = self.wglstm_model()
 
         # Initial training
@@ -37,13 +35,10 @@ class TestKerasSerialization:
         # record stats and save model
         model_1_weights = model_1.model_.get_weights()
         model_1_loss = model_1.model_.losses[0].numpy()
-        model_1.save(dirpath)
+        model_1.save_model(dirpath)
 
         # load a new model and record stats
-        model_2 = self.wglstm_model()
-        model_2.load(dirpath)
-        model_2.initialize(X, y)
-
+        model_2 = WGLSTM.load_model(dirpath)
         model_2_weights = model_2.model_.get_weights()
         for weights_1, weights_2 in zip(model_1_weights, model_2_weights):
             assert np.array_equal(weights_1, weights_2, equal_nan=True)

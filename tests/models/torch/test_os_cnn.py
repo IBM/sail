@@ -1,6 +1,7 @@
 import pytest
 import numpy as np
 import torch
+from sail.models.torch.os_cnn import OSCNNCLassifier
 
 
 # methods for data generation and preprocessing
@@ -17,8 +18,6 @@ def load_to_torch(X_train, y_train, device):
 
 @pytest.fixture
 def net(classification_data):
-    from sail.models.torch.os_cnn import OS_CNN_CLassifier
-
     # the model prints out the result every epoch
     X_train, y_train = classification_data
     X_train, y_train = load_to_torch(X_train, y_train, "cpu")
@@ -27,7 +26,7 @@ def net(classification_data):
     input_channel = X_train.shape[1]  # input channel size
     n_class = max(y_train) + 1  # output class number
     receptive_field_shape = min(int(X_train.shape[-1] / 4), Max_kernel_size)
-    return OS_CNN_CLassifier(n_class.item(), input_channel, receptive_field_shape)
+    return OSCNNCLassifier(n_class.item(), input_channel, receptive_field_shape)
 
 
 @pytest.fixture

@@ -1,7 +1,8 @@
 from array import array
 from river.datasets import synth
 import numpy as np
-from river import linear_model, optim
+from river import optim
+from sail.models.river.linear_model import LinearRegression
 
 from sail.models.ensemble.distAggregateRegressor import DistAggregateRegressor
 
@@ -22,8 +23,7 @@ class TestDistAggregateRegressor:
         # prepare the ensemble
         learner = DistAggregateRegressor(
             estimators=[
-                linear_model.LinearRegression(optimizer=o, intercept_lr=0.1)
-                for o in optimizers
+                LinearRegression(optimizer=o, intercept_lr=0.1) for o in optimizers
             ]
         )
         cnt = 0
@@ -56,8 +56,7 @@ class TestDistAggregateRegressor:
 
         learner = DistAggregateRegressor(
             estimators=[
-                linear_model.LinearRegression(optimizer=o, intercept_lr=0.1)
-                for o in optimizers
+                LinearRegression(optimizer=o, intercept_lr=0.1) for o in optimizers
             ],
             aggregator="windsor",
         )

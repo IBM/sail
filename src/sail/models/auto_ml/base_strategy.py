@@ -190,6 +190,10 @@ class PipelineStrategy:
         )
         try:
             fit_result = self._tune_pipeline(tune_params, warm_start, **fit_params)
+            if fit_result is None:
+                raise Exception(
+                    f"The result of pipeline tuning is None. Please check search parameters."
+                )
         except Exception as e:
             ray.shutdown()
             raise Exception(

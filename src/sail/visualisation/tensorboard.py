@@ -84,15 +84,20 @@ class TensorboardWriter(SummaryWriter):
         figure.set_size_inches(6, 6)
         figure.set_dpi(150)
 
-        cf_matrix = confusion_matrix(y_true, y_pred)
+        labels = np.unique(y_true).tolist()
+        cf_matrix = confusion_matrix(y_true, y_pred, labels=labels)
         sns.heatmap(
-            cf_matrix / np.sum(cf_matrix), annot=True, fmt=".2%", cmap="Blues", ax=ax1
+            cf_matrix / np.sum(cf_matrix),
+            annot=True,
+            fmt=".2%",
+            cmap="Blues",
+            ax=ax1,
+            xticklabels=labels,
+            yticklabels=labels,
         )
         sns.heatmap(
             pd.DataFrame(
-                classification_report(
-                    y_true, y_pred, target_names=["0", "1"], output_dict=True
-                )
+                classification_report(y_true, y_pred, labels=labels, output_dict=True)
             )
             .iloc[:-1, :]
             .T,

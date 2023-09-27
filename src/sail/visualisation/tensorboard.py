@@ -87,9 +87,9 @@ class TensorboardWriter(SummaryWriter):
         labels = np.unique(y_true).tolist()
         cf_matrix = confusion_matrix(y_true, y_pred, labels=labels)
         sns.heatmap(
-            cf_matrix / np.sum(cf_matrix),
+            cf_matrix,
             annot=True,
-            fmt=".2%",
+            fmt="d",
             cmap="Blues",
             ax=ax1,
             xticklabels=labels,
@@ -112,6 +112,7 @@ class TensorboardWriter(SummaryWriter):
             figure=figure,
             global_step=epoch_n,
         )
+        plt.close()
         self.flush()
 
     def add_image_custom(

@@ -7,22 +7,15 @@ import numpy as np
 import pandas as pd
 from sklearn import utils
 from sklearn.base import clone
-from sklearn.exceptions import NotFittedError
 from sklearn.pipeline import Pipeline
 from sklearn.utils import _print_elapsed_time
 from sklearn.utils.metaestimators import available_if
-from sklearn.utils.validation import check_is_fitted
 
-# from skorch.regressor import NeuralNetRegressor
-
-from sail.models.base import SAILModel
 from sail.common.decorators import log_epoch
 from sail.common.helper import VerboseManager
 from sail.common.progress_bar import SAILProgressBar
 from sail.common.scorer import SAILModelScorer
-
-# from sail.models.torch.base import TorchSerializationMixin
-# from sail.models.keras.base import KerasSerializationMixin
+from sail.models.base import SAILModel
 from sail.utils.logging import configure_logger
 from sail.utils.serialization import load_obj, save_obj
 
@@ -85,20 +78,17 @@ class SAILPipeline(Pipeline):
 
     def _validate_and_get_scorer(self, scoring, estimator):
         estimator_type = None
-
         if estimator == "passthrough":
             estimator_type = estimator
         elif hasattr(estimator, "_estimator_type"):
             estimator_type = estimator._estimator_type
 
         if estimator_type:
-            estimator_type = SAILModelScorer(
+            return SAILModelScorer(
                 scoring=scoring,
                 estimator_type=estimator_type,
                 pipeline_mode=True,
             )
-
-        return estimator_type
 
     @property
     def get_progressive_score(self):
@@ -362,26 +352,16 @@ class SAILPipeline(Pipeline):
         return np.asarray(y_pred).reshape((-1,))
 
     def __sklearn_is_fitted__(self):
-        """Indicate whether pipeline has been fit."""
-        try:
-            # check if the last step of the pipeline is fitted
-            # we only check the last step since if the last step is fit, it
-            # means the previous steps should also be fit. This is faster than
-            # checking if every step of the pipeline is fit.
-            estimator = self.steps[-1][1]
-
-            attributes = None
-            # if isinstance(estimator, NeuralNetRegressor):
-            #     attributes = (
-            #         attributes
-            #         or [module + "_" for module in estimator._modules]
-            #         or ["module_"]
-            #     )
-
-            check_is_fitted(estimator=estimator, attributes=attributes)
-            return True
-        except NotFittedError:
-            return False
+        """Indicate whether the pipeline has been fit."""
+        # check if the last step of the pipeline is fitted
+        # we only check the last step since if the last step is fit, it
+        # means the previous steps should also be fit. This is faster than
+        # checking if every step of the pipeline is fit.
+        estimator = self.steps[-1][1]
+        if hasattr(estimator, "check_is_fitted"):
+            return estimator.check_is_fitted()
+        else:
+            return super().__sklearn_is_fitted__()
 
     def save(self, model_folder, name="sail_pipeline", overwrite=True) -> str:
         """
@@ -508,11 +488,15 @@ class SAILPipeline(Pipeline):
         estimator_name = steps_meta[-1]
         estimator_path = os.path.join(load_location, "steps", estimator_name)
 
-        # if Path(os.path.join(estimator_path, ".pytorch")).exists():
-        #     estimator = TorchSerializationMixin.load_model(estimator_path)
-        # elif Path(os.path.join(estimator_path, ".keras")).exists():
-        #     estimator = KerasSerializationMixin.load_model(estimator_path)
-        if Path(os.path.join(estimator_path, ".sailmodel")).exists():
+        if Path(os.path.join(estimator_path, ".pytorch")).exists():
+            from sail.models.torch.base import TorchSerializationMixin
+
+            estimator = TorchSerializationMixin.load_model(estimator_path)
+        elif Path(os.path.join(estimator_path, ".keras")).exists():
+            from sail.models.keras.base import KerasSerializationMixin
+
+            estimator = KerasSerializationMixin.load_model(estimator_path)
+        elif Path(os.path.join(estimator_path, ".sailmodel")).exists():
             estimator = SAILModel.load_model(estimator_path)
         else:
             # Try the default load method

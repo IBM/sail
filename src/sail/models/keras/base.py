@@ -89,7 +89,7 @@ class KerasSerializationMixin:
             return model_wrapper
 
 
-class KerasInputMixin:
+class KerasModelMixin:
     def _fit(
         self,
         X,
@@ -128,7 +128,7 @@ class KerasInputMixin:
 
 
 class SAILKerasRegressor(
-    KerasInputMixin, KerasRegressor, KerasSerializationMixin, SAILModel
+    KerasModelMixin, KerasRegressor, KerasSerializationMixin, SAILModel
 ):
     def __init__(self, *args, **kwargs):
         super(SAILKerasRegressor, self).__init__(
@@ -138,7 +138,7 @@ class SAILKerasRegressor(
 
 
 class SAILKerasClassifier(
-    KerasInputMixin, KerasClassifier, KerasSerializationMixin, SAILModel
+    KerasModelMixin, KerasClassifier, KerasSerializationMixin, SAILModel
 ):
     def __init__(self, *args, **kwargs):
         super(SAILKerasClassifier, self).__init__(

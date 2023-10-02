@@ -1,6 +1,8 @@
-import copy
-import importlib
 import os
+
+os.environ["SKIP_LOG_RESET"] = "True"
+
+import importlib
 import shutil
 from typing import Literal, Type, Union
 
@@ -52,11 +54,15 @@ class SAILAutoPipeline(SAILModel, BaseEstimator):
         self.tensorboard_log_dir = tensorboard_log_dir
         self.tracer = tracer
 
+        # create search method for model tuning
         self.search_method = self._resolve_search_method(
             search_method, search_method_params
         )
+
         # validate and create verbosity manager
         self.verbosity = self._resolve_verbosity(verbosity_level, verbosity_interval)
+
+        # create pipeline strategy
         self.pipeline_strategy = self._resolve_pipeline_strategy(pipeline_strategy)
 
     @property
@@ -294,7 +300,7 @@ class SAILAutoPipeline(SAILModel, BaseEstimator):
         # -------------------------------------------
         if self.tensorboard_log_dir:
             save_obj(
-                obj=self.pipeline_strategy.writer.get_state(),
+                obj=self.pipeline_strategy.get_stats_writer().get_state(),
                 location=os.path.join(save_location, "pipeline_strategy"),
                 file_name="tensorboard_dir",
                 serialize_type="json",
@@ -390,7 +396,7 @@ class SAILAutoPipeline(SAILModel, BaseEstimator):
                 file_name="tensorboard_dir",
                 serialize_type="json",
             )
-            sail_auto_pipeline.pipeline_strategy.writer.set_state(state)
+            sail_auto_pipeline.pipeline_strategy.get_stats_writer().set_state(state)
 
         # -------------------------------------------
         # Load data already collected for auto ml tuning

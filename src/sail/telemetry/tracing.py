@@ -69,21 +69,19 @@ class TracingClient:
         self.otlp_endpoint = otlp_endpoint
         self.span_exporter = span_exporter
 
-        # verify if the tracer enpoint is valid
-        try:
-            validate_address(otlp_endpoint)
-        except Exception as e:
-            raise Exception(f"Tracing Error: {str(e)}")
-
-        provider = TracerProvider(
-            resource=Resource.create({SERVICE_NAME: service_name})
-        )
-
         if otlp_endpoint is not None:
+            # verify if the tracer enpoint is valid
+            try:
+                validate_address(otlp_endpoint)
+            except Exception as e:
+                raise Exception(f"Tracing Error: {str(e)}")
             span_exporter = OTLPSpanExporter(endpoint=_append_trace_path(otlp_endpoint))
         elif span_exporter is None:
             span_exporter = OTLPSpanExporter()
 
+        provider = TracerProvider(
+            resource=Resource.create({SERVICE_NAME: service_name})
+        )
         provider.add_span_processor(BatchSpanProcessor(span_exporter))
         oltp_trace.set_tracer_provider(provider)
 

@@ -8,6 +8,8 @@ from opentelemetry.sdk.trace import TracerProvider
 from opentelemetry.sdk.trace.export import BatchSpanProcessor, SpanExporter
 from opentelemetry.trace.propagation import set_span_in_context
 
+from sail.utils.url_utils import validate_address
+
 
 def trace_with_action(span_name, current_span=False):
     def trace_span(func):
@@ -66,6 +68,12 @@ class TracingClient:
         self.service_name = service_name
         self.otlp_endpoint = otlp_endpoint
         self.span_exporter = span_exporter
+
+        # verify if the tracer enpoint is valid
+        try:
+            validate_address(otlp_endpoint)
+        except Exception as e:
+            raise Exception(f"Tracing Error: {str(e)}")
 
         provider = TracerProvider(
             resource=Resource.create({SERVICE_NAME: service_name})

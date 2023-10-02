@@ -1,4 +1,7 @@
 from typing import Literal
+from sail.utils.logging import configure_logger
+
+LOGGER = configure_logger(logger_name="VerboseManager", bare_format=True)
 
 
 class VerboseManager:
@@ -82,6 +85,7 @@ class VerboseManager:
         self._samples_seen_n += X.shape[0]
 
     def print_epoch_head(self):
-        print(
-            f"\n>>> Epoch: {self._current_epoch_n} | Samples Seen: {self._samples_seen_n} -------------------------------------------------------------------------------------"
+        LOGGER.info("\n")
+        LOGGER.info(
+            f">> Epoch: {self._current_epoch_n} | Samples Seen: {self._samples_seen_n} -------------------------------------------------------------------------------------"
         )

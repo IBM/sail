@@ -7,6 +7,7 @@ def configure_logger(
     logger_name: str,
     logging_level=sail.get_logging_level(),
     json=False,
+    bare_format=False,
 ):
     if logger_name is None or logger_name == "":
         raise Exception(
@@ -14,21 +15,24 @@ def configure_logger(
         )
 
     heading = "SAIL" + " " + "(" + logger_name + ")"
-
-    info_log_format = (
-        "%(color)s[%(asctime)s:%(msecs)d] - %(levelname)s - " + heading + " - "
-        "%(end_color)s%(message)s"
-    )
-    rest_log_format = (
-        "%(color)s[%(asctime)s:%(msecs)d] - %(levelname)s - " + heading + " - "
-        "%(module)s:%(funcName)s:%(lineno)d%(end_color)s %(message)s"
-    )
-
     logging_level = logging.getLevelName(logging_level)
-    if logging.INFO == logging_level:
-        log_format = info_log_format
+
+    if bare_format:
+        log_format = "%(message)s"
     else:
-        log_format = rest_log_format
+        info_log_format = (
+            "%(color)s[%(asctime)s:%(msecs)d] - %(levelname)s - " + heading + " - "
+            "%(end_color)s%(message)s"
+        )
+        rest_log_format = (
+            "%(color)s[%(asctime)s:%(msecs)d] - %(levelname)s - " + heading + " - "
+            "%(module)s:%(funcName)s:%(lineno)d%(end_color)s %(message)s"
+        )
+
+        if logging.INFO == logging_level:
+            log_format = info_log_format
+        else:
+            log_format = rest_log_format
 
     formatter = logzero.LogFormatter(fmt=log_format, datefmt="%Y-%m-%d %H:%M:%S")
     return logzero.setup_logger(

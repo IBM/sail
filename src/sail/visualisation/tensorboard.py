@@ -1,24 +1,25 @@
 import glob
 import os
 import time
-import seaborn as sns
-import numpy as np
-import torch
+
 import matplotlib.pyplot as plt
-from torch.utils.tensorboard import FileWriter, SummaryWriter
-from torch.utils.tensorboard.summary import scalar, image
-from torch.utils.tensorboard._utils import figure_to_image
-from sklearn.metrics import confusion_matrix
-from sail.utils.logging import configure_logger
+import numpy as np
 import pandas as pd
-from sklearn.metrics import classification_report
+import seaborn as sns
+import torch
+from sklearn.metrics import classification_report, confusion_matrix
+from torch.utils.tensorboard import FileWriter, SummaryWriter
+from torch.utils.tensorboard._utils import figure_to_image
+from torch.utils.tensorboard.summary import image, scalar
+
+from sail.utils.logging import configure_logger
 
 LOGGER = configure_logger(logger_name="TensorboardWriter")
 
 
 class TensorboardWriter(SummaryWriter):
     def __init__(
-        self, log_dir=None, exp_name="Training_Logs", use_dir=None, *args, **kwrags
+        self, log_dir, exp_name="Training_Logs", use_dir=None, *args, **kwrags
     ):
         if use_dir:
             exp_dir = log_dir + "/" + use_dir
@@ -95,6 +96,8 @@ class TensorboardWriter(SummaryWriter):
             xticklabels=labels,
             yticklabels=labels,
         )
+        ax1.title.set_text("Confusion Matrix")
+
         sns.heatmap(
             pd.DataFrame(
                 classification_report(y_true, y_pred, labels=labels, output_dict=True)
@@ -104,7 +107,6 @@ class TensorboardWriter(SummaryWriter):
             annot=True,
             ax=ax2,
         )
-        ax1.title.set_text("Confusion Matrx")
         ax2.title.set_text("Classfication Report")
 
         self.add_image_custom(

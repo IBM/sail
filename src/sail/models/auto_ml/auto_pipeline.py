@@ -1,7 +1,5 @@
 import os
 
-os.environ["SKIP_LOG_RESET"] = "True"
-
 import importlib
 import shutil
 from typing import Literal, Type, Union

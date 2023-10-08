@@ -1,6 +1,6 @@
 # SAIL
 
-[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT) ![main branch](https://github.com/IBM/sail/actions/workflows/build.yml/badge.svg?branch=main) [![](https://img.shields.io/badge/python-3.8+-blue.svg)](https://www.python.org/downloads/) <img alt="Code style: black" src="https://img.shields.io/badge/code%20style-black-000000.svg"></a>
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT) ![main branch](https://github.com/IBM/sail/actions/workflows/build.yml/badge.svg?branch=main) [![](https://img.shields.io/badge/python-3.10-blue.svg)](https://www.python.org/downloads/) <img alt="Code style: black" src="https://img.shields.io/badge/code%20style-black-000000.svg"></a>
 
 The library is for experimenting with streaming processing engines (SPEs) and incremental machine learning (IML) models. The main features of Sail are:
 

@@ -36,9 +36,6 @@ class KerasSerializationMixin:
             )
 
             params = self.get_params()
-            params.pop("model")
-            params.pop("init_X")
-            params.pop("init_y")
             save_obj(
                 obj=params,
                 location=model_folder,

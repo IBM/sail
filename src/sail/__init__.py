@@ -1,4 +1,4 @@
-__version__ = "0.12.0"
+__version__ = "0.12.1"
 __package_name__ = "SAIL"
 _logging_level = "INFO"
 import os

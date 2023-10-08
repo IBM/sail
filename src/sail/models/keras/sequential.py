@@ -1,12 +1,13 @@
 import tensorflow as tf
 from sail.models.keras import SAILKerasClassifier
+from typing import List
 
 
 class _Model:
     def __init__(
         self,
-        num_hidden_nodes: int = 100,
-        hidden_layer_activation: str = "relu",
+        num_hidden_nodes: List[int] = [100],
+        hidden_layer_activation: List[str] = ["relu"],
         num_output_nodes: int = 1,
         outer_layer_activation: str = "sigmoid",
     ):
@@ -15,13 +16,22 @@ class _Model:
         self.num_output_nodes = num_output_nodes
         self.outer_layer_activation = outer_layer_activation
 
-    def get_instance(self):
+    def create_instance(self):
         model = tf.keras.models.Sequential()
-        model.add(
-            tf.keras.layers.Dense(
-                self.num_hidden_nodes, activation=self.hidden_layer_activation
+
+        assert isinstance(self.num_hidden_nodes, list) and isinstance(
+            self.hidden_layer_activation, list
+        ), "num_hidden_nodes and hidden_layer_activation must be of the type List[str]."
+
+        for num_hidden_nodes, hidden_layer_activation in zip(
+            self.num_hidden_nodes, self.hidden_layer_activation
+        ):
+            model.add(
+                tf.keras.layers.Dense(
+                    num_hidden_nodes, activation=hidden_layer_activation
+                )
             )
-        )
+
         model.add(
             tf.keras.layers.Dense(
                 self.num_output_nodes, activation=self.outer_layer_activation
@@ -50,7 +60,7 @@ class KerasSequentialClassifier(SAILKerasClassifier):
                 hidden_layer_activation,
                 num_output_nodes,
                 outer_layer_activation,
-            ).get_instance(),
+            ).create_instance(),
             loss=loss,
             optimizer=optimizer,
             metrics=metrics,

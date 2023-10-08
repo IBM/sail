@@ -129,3 +129,11 @@ class RNNRegressor(SAILTorchRegressor):
             module__cell_type=cell_type,
             **kwargs,
         )
+        self.input_units = input_units
+        self.output_units = output_units
+        self.hidden_units = hidden_units
+        self.n_hidden_layers = n_hidden_layers
+        self.dropout = dropout
+        self.output_nonlin = output_nonlin
+        self.squeeze_output = squeeze_output
+        self.cell_type = cell_type

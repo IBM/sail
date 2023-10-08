@@ -67,3 +67,7 @@ class KerasSequentialClassifier(SAILKerasClassifier):
             epochs=epochs,
             verbose=verbose,
         )
+        self.num_hidden_nodes = num_hidden_nodes
+        self.hidden_layer_activation = hidden_layer_activation
+        self.num_output_nodes = num_output_nodes
+        self.outer_layer_activation = outer_layer_activation

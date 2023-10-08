@@ -3,6 +3,7 @@ from enum import Enum, auto
 import numpy as np
 import pandas as pd
 import ray
+from sklearn.base import clone
 
 from sail.common.decorators import log_epoch
 from sail.telemetry import trace_with_action
@@ -105,14 +106,19 @@ class PipelineStrategy:
         self.tensorboard_log_dir = tensorboard_log_dir
         self.tracer = tracer
 
-        if tensorboard_log_dir:
-            self.writer = TensorboardWriter(tensorboard_log_dir)
-
     def set_current_action(self, current_action: PipelineAction):
         self.pipeline_actions.current_action_node = current_action
 
     def get_current_action(self):
         return self.pipeline_actions.current_action_node
+
+    def get_stats_writer(self):
+        # fmt: off
+        assert self.tensorboard_log_dir is not None, "Parameter 'tensorboard_log_dir' is None. Unable to create stats writer."
+        
+        if not hasattr(self, "writer"):
+            self.writer = TensorboardWriter(self.tensorboard_log_dir)
+        return self.writer
 
     @log_epoch
     def next(self, X, y=None, tune_params={}, **fit_params):
@@ -164,9 +170,10 @@ class PipelineStrategy:
             self._input_y = np.hstack((self._input_y, y))
 
         if self._input_X.shape[0] < self.search_data_size:
-            LOGGER.info(
-                f"Collecting data for pipeline tuning. Current Batch Size: {self._input_X.shape[0]}. Required: {self.search_data_size}"
-            )
+            if self.verbosity.get() == 1:
+                LOGGER.info(
+                    f"Collecting data for pipeline tuning. Current Batch Size: {self._input_X.shape[0]}. Required: {self.search_data_size}"
+                )
         else:
             LOGGER.info(
                 f"Data collection completed for pipeline tuning. Final Batch Size: {self._input_X.shape[0]}."
@@ -189,11 +196,12 @@ class PipelineStrategy:
             f"Cluster resources: Nodes: {len(ray.nodes())}, Cluster CPU: {ray.cluster_resources()['CPU']}, Cluster Memory: {str(format(ray.cluster_resources()['memory'] / (1024 * 1024 * 1024), '.2f')) + ' GB'}"
         )
         try:
-            fit_result = self._tune_pipeline(tune_params, warm_start, **fit_params)
+            best_estimator, best_params = self._tune_pipeline(
+                tune_params, warm_start, **fit_params
+            )
         except Exception as e:
-            ray.shutdown()
             raise Exception(
-                f"Pipeline tuning failed. Disconnecting Ray cluster. Please check logs: \n{str(e)}"
+                f"Pipeline tuning failed. Disconnecting Ray cluster. {str(e)}"
             )
         finally:
             ray.shutdown()
@@ -202,12 +210,12 @@ class PipelineStrategy:
 
         # set best estimator and fit results
         # self._fit_result = fit_result
-        self._best_pipeline = fit_result.best_estimator_
+        self._best_pipeline = best_estimator
 
         # replace verbosity instance of the best pipeline from the parent.
         self._best_pipeline.verbosity = self.verbosity
 
-        LOGGER.info(f"Found best params: {fit_result.best_params}")
+        LOGGER.info(f"Found best params: {best_params}")
 
         # housekeeping
         del self.__dict__["_input_X"]
@@ -224,7 +232,23 @@ class PipelineStrategy:
             tune_params=tune_params,
             **fit_params,
         )
-        return fit_result
+        if fit_result is None:
+            raise Exception(
+                f"The result of the pipeline tuning is None. Please check input features and search parameters of the search algorithm."
+            )
+        best_params = fit_result.best_params
+
+        # prepare and fit best estimator
+        best_estimator = clone(
+            clone(self.search_method.estimator).set_params(**best_params)
+        )
+        best_estimator.verbosity.disabled()
+        if self._input_y is not None:
+            best_estimator.fit(self._input_X, self._input_y, **fit_params)
+        else:
+            best_estimator.fit(self._input_X, **fit_params)
+
+        return best_estimator, best_params
 
     @trace_with_action(
         PipelineActionType.SCORE_AND_DETECT_DRIFT.name, current_span=True
@@ -240,14 +264,16 @@ class PipelineStrategy:
 
         # write progress to tensorboard
         if self.tensorboard_log_dir:
-            if self._best_pipeline.steps[-1][1]._estimator_type == "classifier":
-                self.writer.write_classification_report(
+            if self._best_pipeline._final_estimator._estimator_type == "classifier":
+                self.get_stats_writer().write_classification_report(
                     y_pred, y, epoch_n=self.verbosity.current_epoch_n
                 )
             else:
                 start_index = self.verbosity.samples_seen_n - len(y_pred)
-                self.writer.write_predictions(y_pred, y, start_index=start_index)
-            self.writer.write_score(
+                self.get_stats_writer().write_predictions(
+                    y_pred, y, start_index=start_index
+                )
+            self.get_stats_writer().write_score(
                 score=score,
                 epoch_n=self.verbosity.current_epoch_n,
                 drift_point=is_drift_detected,

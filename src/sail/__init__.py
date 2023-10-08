@@ -1,6 +1,9 @@
-__version__ = "0.11.0"
+__version__ = "0.12.0"
 __package_name__ = "SAIL"
 _logging_level = "INFO"
+import os
+
+os.environ["SKIP_LOG_RESET"] = "True"
 
 
 def set_logging_level(logging_level):

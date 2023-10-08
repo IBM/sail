@@ -1,5 +1,9 @@
 import os
 from pathlib import Path
+
+from sklearn.exceptions import NotFittedError
+from sklearn.utils import validation
+
 from sail.utils.logging import configure_logger
 from sail.utils.serialization import load_obj, save_obj
 
@@ -18,6 +22,16 @@ class SAILModel:
 
     def score(self):
         raise NotImplementedError
+
+    def check_is_fitted(self, attributes=None, *args, **kwargs):
+        """Indicate whether the SAIL model has been fit."""
+        try:
+            validation.check_is_fitted(
+                estimator=self, attributes=attributes, *args, **kwargs
+            )
+            return True
+        except NotFittedError:
+            return False
 
     def save_model(self, model_folder, file_name="model"):
         """Saves the sail model to pickle format.

@@ -1,12 +1,12 @@
 import importlib
 import os
 from pathlib import Path
-from tabnanny import verbose
 import torch
 import numpy as np
 from skorch.classifier import NeuralNetClassifier
 from skorch.regressor import NeuralNetRegressor
-
+from sklearn.exceptions import NotFittedError
+from sklearn.utils import validation
 from sail.models.base import SAILModel
 from sail.utils.logging import configure_logger
 from sail.utils.serialization import load_obj, save_obj
@@ -84,7 +84,7 @@ class TorchSerializationMixin:
         return model
 
 
-class TorchInputMixin:
+class TorchModelMixin:
     def fit(self, X, y=None, **fit_params):
         X, y = self.cast_X_y(X, y)
         return super().fit(X, y, **fit_params)
@@ -109,9 +109,23 @@ class TorchInputMixin:
         else:
             return X
 
+    def check_is_fitted(self, attributes=None, *args, **kwargs):
+        """Indicate whether the torch model has been fit."""
+        try:
+            attributes = (
+                attributes or [module + "_" for module in self._modules] or ["module_"]
+            )
+
+            validation.check_is_fitted(
+                estimator=self, attributes=attributes, *args, **kwargs
+            )
+            return True
+        except NotFittedError:
+            return False
+
 
 class SAILTorchRegressor(
-    TorchInputMixin, NeuralNetRegressor, TorchSerializationMixin, SAILModel
+    TorchModelMixin, NeuralNetRegressor, TorchSerializationMixin, SAILModel
 ):
     def __init__(self, *args, max_epochs=1, batch_size=-1, train_split=None, **kwargs):
         super(SAILTorchRegressor, self).__init__(
@@ -124,7 +138,7 @@ class SAILTorchRegressor(
 
 
 class SAILTorchClassifier(
-    TorchInputMixin, NeuralNetClassifier, TorchSerializationMixin, SAILModel
+    TorchModelMixin, NeuralNetClassifier, TorchSerializationMixin, SAILModel
 ):
     def __init__(
         self,

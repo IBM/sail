@@ -60,6 +60,7 @@ class SAILTuneGridSearchCV(TuneGridSearchCV):
     default_search_params = {
         "verbose": 1,
         "max_iters": 1,
+        "refit": False,
         "early_stopping": False,
         "mode": "max",
         "scoring": "accuracy",
@@ -247,6 +248,7 @@ class SAILTuneGridSearchCV(TuneGridSearchCV):
 class SAILTuneSearchCV(TuneSearchCV):
     default_search_params = {
         "verbose": 1,
+        "refit": False,
         "scoring": "accuracy",
         "mode": "max",
         "early_stopping": False,

@@ -268,6 +268,7 @@ class SAILTuneSearchCV(TuneSearchCV):
         storage_path=None,
         **kwargs,
     ):
+        kwargs["param_distributions"] = kwargs.pop("param_grid")
         super(SAILTuneSearchCV, self).__init__(**kwargs)
         self.num_cpus_per_trial = num_cpus_per_trial
         self.num_gpus_per_trial = num_gpus_per_trial

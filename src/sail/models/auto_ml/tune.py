@@ -355,7 +355,7 @@ class SAILTuneSearchCV(TuneSearchCV):
                 "cpu": self.num_cpus_per_trial,
                 "gpu": self.num_gpus_per_trial,
             },
-            local_dir=self.local_dir,
+            trial_dirname_creator=lambda trial: f"Trail_{trial.trial_id}",
             name="SAILAutoML_Experiment" + "_" + time.strftime("%d-%m-%Y_%H:%M:%S"),
             callbacks=resolve_logger_callbacks(self.loggers, self.defined_loggers),
             time_budget_s=self.time_budget_s,

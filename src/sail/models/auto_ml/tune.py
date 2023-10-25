@@ -266,6 +266,8 @@ class SAILTuneSearchCV(TuneSearchCV):
         keep_best_configurations=1,
         cluster_address=None,
         storage_path=None,
+        namespace=None,
+        runtime_env=None,
         **kwargs,
     ):
         kwargs["param_distributions"] = kwargs.pop("param_grid")
@@ -275,6 +277,8 @@ class SAILTuneSearchCV(TuneSearchCV):
         self.keep_best_configurations = keep_best_configurations
         self.cluster_address = cluster_address
         self.storage_path = storage_path
+        self.namespace = namespace
+        self.runtime_env = runtime_env
 
     def fit(
         self, X, y=None, warm_start=False, groups=None, tune_params=None, **fit_params

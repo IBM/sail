@@ -174,7 +174,7 @@ class SAILTuneGridSearchCV(TuneGridSearchCV):
             verbose=self.verbose,
             stop=stopper,
             config=config,
-            fail_fast="raise",
+            fail_fast=True,
             storage_path=self.storage_path,
             resources_per_trial={
                 "cpu": self.num_cpus_per_trial,
@@ -344,7 +344,7 @@ class SAILTuneSearchCV(TuneSearchCV):
             stop=stopper,
             num_samples=self.n_trials,
             config=config,
-            fail_fast="raise",
+            fail_fast=True,
             storage_path=self.storage_path,
             resources_per_trial={
                 "cpu": self.num_cpus_per_trial,

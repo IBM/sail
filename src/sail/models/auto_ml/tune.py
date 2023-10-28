@@ -174,7 +174,7 @@ class SAILTuneGridSearchCV(TuneGridSearchCV):
             verbose=self.verbose,
             stop=stopper,
             config=config,
-            fail_fast="raise",
+            fail_fast=True,
             storage_path=self.storage_path,
             resources_per_trial={
                 "cpu": self.num_cpus_per_trial,
@@ -266,14 +266,19 @@ class SAILTuneSearchCV(TuneSearchCV):
         keep_best_configurations=1,
         cluster_address=None,
         storage_path=None,
+        namespace=None,
+        runtime_env=None,
         **kwargs,
     ):
+        kwargs["param_distributions"] = kwargs.pop("param_grid")
         super(SAILTuneSearchCV, self).__init__(**kwargs)
         self.num_cpus_per_trial = num_cpus_per_trial
         self.num_gpus_per_trial = num_gpus_per_trial
         self.keep_best_configurations = keep_best_configurations
         self.cluster_address = cluster_address
         self.storage_path = storage_path
+        self.namespace = namespace
+        self.runtime_env = runtime_env
 
     def fit(
         self, X, y=None, warm_start=False, groups=None, tune_params=None, **fit_params
@@ -344,13 +349,13 @@ class SAILTuneSearchCV(TuneSearchCV):
             stop=stopper,
             num_samples=self.n_trials,
             config=config,
-            fail_fast="raise",
+            fail_fast=True,
             storage_path=self.storage_path,
             resources_per_trial={
                 "cpu": self.num_cpus_per_trial,
                 "gpu": self.num_gpus_per_trial,
             },
-            local_dir=self.local_dir,
+            trial_dirname_creator=lambda trial: f"Trail_{trial.trial_id}",
             name="SAILAutoML_Experiment" + "_" + time.strftime("%d-%m-%Y_%H:%M:%S"),
             callbacks=resolve_logger_callbacks(self.loggers, self.defined_loggers),
             time_budget_s=self.time_budget_s,

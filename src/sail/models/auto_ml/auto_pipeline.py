@@ -75,6 +75,11 @@ class SAILAutoPipeline(SAILModel, BaseEstimator):
             return self.best_pipeline.get_progressive_score
 
     @property
+    def metrics(self) -> float:
+        if self.check_is_fitted("metrics"):
+            return self.best_pipeline.metrics
+
+    @property
     def cv_results(self):
         self.check_is_fitted("cv_results()")
         if hasattr("fit_result", self):

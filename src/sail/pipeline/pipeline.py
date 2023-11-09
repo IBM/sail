@@ -97,6 +97,11 @@ class SAILPipeline(Pipeline):
         if self._scorer:
             return self._scorer.get_progressive_score
 
+    @property
+    def metrics(self):
+        if self._scorer:
+            return self._scorer.metrics
+
     def score(self, X, y, sample_weight=1.0, verbose: Literal[0, 1] | None = None):
         if self._scorer:
             y_preds = self.predict(X)

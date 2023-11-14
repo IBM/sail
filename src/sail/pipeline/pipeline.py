@@ -1,10 +1,11 @@
 import os
 import shutil
 from pathlib import Path
-from typing import Any, List, Literal, Tuple
+from typing import Any, List, Literal, Tuple, Union, Type
 
 import numpy as np
 import pandas as pd
+from river import metrics
 from sklearn import utils
 from sklearn.base import clone
 from sklearn.pipeline import Pipeline
@@ -26,7 +27,9 @@ class SAILPipeline(Pipeline):
     def __init__(
         self,
         steps: List[Tuple[str, Any]],
-        scoring=None,
+        scoring: Union[
+            List[Union[str, metrics.base.Metric, Type[metrics.base.Metric]]], None
+        ] = None,
         cache_memory=None,
         verbosity_level: Literal[0, 1] | None = 1,
         verbosity_interval: int | None = None,
@@ -93,6 +96,11 @@ class SAILPipeline(Pipeline):
     def get_progressive_score(self):
         if self._scorer:
             return self._scorer.get_progressive_score
+
+    @property
+    def metrics(self):
+        if self._scorer:
+            return self._scorer.metrics
 
     def score(self, X, y, sample_weight=1.0, verbose: Literal[0, 1] | None = None):
         if self._scorer:

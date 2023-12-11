@@ -39,6 +39,22 @@ class SAILAutoPipeline(SAILModel, BaseEstimator):
         tensorboard_log_dir: str = None,
         tracer: TracingClient = None,
     ) -> None:
+        """SAIL AutoML class to find the best SAIL pipeline for a given data stream.
+
+        Args:
+            pipeline (SAILPipeline): instance of a SAIL Pipeline
+            pipeline_params_grid (dict): parameter space for model tuning
+            search_method (Union[None, str], optional): search method to use for model tuning. Defaults to None.
+            search_method_params (dict, optional): search method parameters. Defaults to None.
+            search_data_size (int, optional): no. of data points to use for model tuning. Defaults to 1000.
+            incremental_training (bool, optional): whether to perform incremental training once the best pipeline is available. Defaults to False.
+            drift_detector (Union[None, SAILDriftDetector], optional): Instance of a Drift Detector. Defaults to None.
+            pipeline_strategy (Union[None, str], optional): AutoML training strategy. Defaults to None.
+            verbosity_level (Literal[0, 1] | None, optional): verbosity level for SAIL AutoPipeline. Defaults to 1.
+            verbosity_interval (int | None, optional): verbose every {verbosity_interval}th incremental epoch. verbosity_level must be 1. Defaults to None.
+            tensorboard_log_dir (str, optional): training logs directory. Start tensorboard server and send training progress and performance score to Tensorboard in real-time. Defaults to None.
+            tracer (TracingClient, optional): Instance of a tracer (Jaeger). Send important event spans to tracer. Defaults to None.
+        """
         self.pipeline = pipeline
         self.pipeline_params_grid = pipeline_params_grid
         self.search_method_params = search_method_params

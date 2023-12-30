@@ -256,6 +256,7 @@ class PipelineStrategy:
         PipelineActionType.SCORE_AND_DETECT_DRIFT.name, current_span=True
     )
     def _score_and_detect_drift(self, X, y, **fit_params):
+        score = None
         if self.drift_detector.drift_param == "score":
             score = self._predict_and_score(X, y)
             is_drift_detected = self._detect_drift(score=score)
@@ -274,11 +275,13 @@ class PipelineStrategy:
                 self.get_stats_writer().write_predictions(
                     y_pred, y, start_index=start_index
                 )
-            self.get_stats_writer().write_score(
-                score=score,
-                epoch_n=self.verbosity.current_epoch_n,
-                drift_point=is_drift_detected,
-            )
+
+            if score:
+                self.get_stats_writer().write_score(
+                    score=score,
+                    epoch_n=self.verbosity.current_epoch_n,
+                    drift_point=is_drift_detected,
+                )
 
         if (not is_drift_detected) and self.incremental_training:
             self._partial_fit_pipeline(X, y, **fit_params)

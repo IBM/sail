@@ -60,9 +60,6 @@ class SAILAutoPipeline(SAILModel, BaseEstimator):
         self.search_method_params = search_method_params
         self.search_data_size = search_data_size
         self.incremental_training = incremental_training
-        self.drift_detector = drift_detector
-        if drift_detector is None:
-            self.drift_detector = SAILDriftDetector()
         self.verbosity_level = verbosity_level
         self.verbosity_interval = verbosity_interval
         self.tensorboard_log_dir = tensorboard_log_dir
@@ -75,6 +72,11 @@ class SAILAutoPipeline(SAILModel, BaseEstimator):
 
         # validate and create verbosity manager
         self.verbosity = self._resolve_verbosity(verbosity_level, verbosity_interval)
+
+        # validate and create drift detector
+        self.drift_detector = drift_detector
+        if drift_detector is None:
+            self.drift_detector = SAILDriftDetector()
 
         # create pipeline strategy
         self.pipeline_strategy = self._resolve_pipeline_strategy(pipeline_strategy)

@@ -40,7 +40,7 @@ class TestPipelineStrategy:
             },
             search_data_size=100,
             incremental_training=True,
-            drift_detector=SAILDriftDetector(model=EDDM(), drift_param="difference"),
+            drift_detector=SAILDriftDetector(model=EDDM(), drift_param="score"),
             pipeline_strategy="DetectAndIncrement",
         )
 
@@ -73,7 +73,7 @@ class TestPipelineStrategy:
             },
             search_data_size=100,
             incremental_training=True,
-            drift_detector=SAILDriftDetector(model=EDDM(), drift_param="difference"),
+            drift_detector=SAILDriftDetector(model=EDDM(), drift_param="score"),
             pipeline_strategy="DetectAndRetrain",
         )
 
@@ -106,7 +106,7 @@ class TestPipelineStrategy:
             },
             search_data_size=100,
             incremental_training=True,
-            drift_detector=SAILDriftDetector(model=EDDM(), drift_param="difference"),
+            drift_detector=SAILDriftDetector(model=EDDM(), drift_param="score"),
             pipeline_strategy="DetectAndWarmStart",
         )
 
@@ -139,7 +139,7 @@ class TestPipelineStrategy:
             },
             search_data_size=100,
             incremental_training=True,
-            drift_detector=SAILDriftDetector(model=EDDM(), drift_param="difference"),
+            drift_detector=SAILDriftDetector(model=EDDM(), drift_param="score"),
             pipeline_strategy="DetectAndRestart",
         )
 
@@ -172,7 +172,7 @@ class TestPipelineStrategy:
             },
             search_data_size=100,
             incremental_training=True,
-            drift_detector=SAILDriftDetector(model=EDDM(), drift_param="difference"),
+            drift_detector=SAILDriftDetector(model=EDDM(), drift_param="score"),
             pipeline_strategy="PeriodicRestart",
         )
 

@@ -24,6 +24,26 @@ class SAILDriftDetector:
     def set_verbose(self, verbose):
         self.verbose = verbose
 
+    def validate_drift_param(self, estimator_type):
+        if estimator_type == "classifier":
+            assert self.drift_param in [
+                "score",
+            ], "A classifier (final estimator) can only take drift param from ['score']"
+        elif estimator_type == "regressor":
+            assert self.drift_param in [
+                "score",
+                "difference",
+            ], "A regressor (final estimator) can only take drift param from ['score', 'difference']"
+        elif estimator_type == "clusterer":
+            assert self.drift_param in [
+                "score",
+                "difference",
+            ], "A clusterer (final estimator) can only take drift param from ['score', 'difference']"
+        else:
+            raise Exception(
+                f"Drift detection failed. Invalid final estimator type. Estimator can only be a regressor, classifier or clusterer. Given estimator type: {estimator_type}."
+            )
+
     def _resolve_drift_detector(self, drift_detector) -> DriftDetector:
         if isinstance(drift_detector, DriftDetector) or isinstance(
             drift_detector, BinaryDriftDetector
@@ -47,7 +67,11 @@ class SAILDriftDetector:
             )
         return _drift_detector_class()
 
-    def detect_drift(self, score=None, y_pred=None, y_true=None):
+    def detect_drift(self, score=None, y_pred=None, y_true=None, estimator_type=None):
+        # TODO Below Null check should be removed if all SAIL models support 'estimator_type'.
+        if estimator_type:
+            self.validate_drift_param(estimator_type)
+
         if self.drift_param == "difference":
             return self.detect_drift_with_difference(y_pred, y_true)
         elif self.drift_param == "score":

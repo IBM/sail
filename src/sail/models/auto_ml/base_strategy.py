@@ -23,7 +23,7 @@ class PipelineActionType(Enum):
     PARTIAL_FIT_PIPELINE = auto()
     DRIFT_DETECTION = auto()
     PREDICT = auto()
-    PREDICT_AND_SCORE = auto()
+    SCORE = auto()
 
 
 class PipelineAction:
@@ -256,13 +256,14 @@ class PipelineStrategy:
         PipelineActionType.SCORE_AND_DETECT_DRIFT.name, current_span=True
     )
     def _score_and_detect_drift(self, X, y, **fit_params):
-        score = None
-        if self.drift_detector.drift_param == "score":
-            score = self._predict_and_score(X, y)
-            is_drift_detected = self._detect_drift(score=score)
-        elif self.drift_detector.drift_param == "difference":
-            y_pred = self._predict(X)
-            is_drift_detected = self._detect_drift(y_pred=y_pred, y_true=y)
+        y_pred = self._predict(X)
+        score = self._scoring(X, y)
+        is_drift_detected = self._detect_drift(
+            score=score,
+            y_pred=y_pred,
+            y_true=y,
+            estimator_type=self._best_pipeline._final_estimator._estimator_type,
+        )
 
         # write progress to tensorboard
         if self.tensorboard_log_dir:
@@ -276,12 +277,11 @@ class PipelineStrategy:
                     y_pred, y, start_index=start_index
                 )
 
-            if score:
-                self.get_stats_writer().write_score(
-                    score=score,
-                    epoch_n=self.verbosity.current_epoch_n,
-                    drift_point=is_drift_detected,
-                )
+            self.get_stats_writer().write_score(
+                score=score,
+                epoch_n=self.verbosity.current_epoch_n,
+                drift_point=is_drift_detected,
+            )
 
         if (not is_drift_detected) and self.incremental_training:
             self._partial_fit_pipeline(X, y, **fit_params)
@@ -300,8 +300,8 @@ class PipelineStrategy:
         self._best_pipeline.fit_final_estimator(X, y, warm_start=False, **fit_params)
         self.pipeline_actions.next()
 
-    @trace_with_action(PipelineActionType.PREDICT_AND_SCORE.name)
-    def _predict_and_score(self, X, y):
+    @trace_with_action(PipelineActionType.SCORE.name)
+    def _scoring(self, X, y):
         if self.incremental_training:
             score = self._best_pipeline._progressive_score(X, y, detached=True)
         else:

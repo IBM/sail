@@ -65,7 +65,8 @@ class PipelineActions:
         last_action_node.next = new_action_node
         new_action_node.previous = last_action_node
         new_action_node.next = self.get_action_node(next)
-        new_action_node.next.previous = new_action_node
+        if new_action_node.next:
+            new_action_node.next.previous = new_action_node
 
     def get_actions(self):
         actions = []

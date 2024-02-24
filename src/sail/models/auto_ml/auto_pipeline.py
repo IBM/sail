@@ -107,9 +107,10 @@ class SAILAutoPipeline(SAILModel, BaseEstimator):
         pipeline_action = self.pipeline_strategy.pipeline_actions.current_action_node
         if (
             not (
-                self.pipeline_strategy.__class__.__name__ == "PeriodicRestart"
+                pipeline_action.previous
                 and pipeline_action.previous.action
                 == PipelineActionType.FIND_BEST_PIPELINE
+                and self.pipeline_strategy.__class__.__name__ == "PeriodicRestart"
             )
             and pipeline_action.action == PipelineActionType.DATA_COLLECTION
         ):

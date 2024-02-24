@@ -105,7 +105,14 @@ class SAILAutoPipeline(SAILModel, BaseEstimator):
 
     def check_is_fitted(self, func) -> None:
         pipeline_action = self.pipeline_strategy.pipeline_actions.current_action_node
-        if pipeline_action.action == PipelineActionType.DATA_COLLECTION:
+        if (
+            not (
+                self.pipeline_strategy.__class__.__name__ == "PeriodicRestart"
+                and pipeline_action.previous.action
+                == PipelineActionType.FIND_BEST_PIPELINE
+            )
+            and pipeline_action.action == PipelineActionType.DATA_COLLECTION
+        ):
             LOGGER.warning(
                 f"Ignoring...{func}, since the best pipeline is not available yet. Keep calling 'train' with new data to get the best pipeline."
             )

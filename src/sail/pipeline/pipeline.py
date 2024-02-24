@@ -528,7 +528,7 @@ class SAILPipeline(Pipeline):
         # Pre-load progressive scorer state from initial_points if exist.
         # -------------------------------------------
         if os.path.exists(os.path.join(load_location, "scorer_state.npz")):
-            initial_points = np.load(os.path.join(load_location, "scorer_state.npz"))
+            initial_points = np.load(os.path.join(load_location, "scorer_state.npz"), allow_pickle=True)
             sail_pipeline._scorer.set_state(initial_points)
             # sail_pipeline._scorer.progressive_score(
             #     initial_points["y_true"], initial_points["y_pred"], verbose=1
